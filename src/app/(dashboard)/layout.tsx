@@ -42,14 +42,14 @@ export default function DashboardLayout({
 
             {/* Sidebar */}
             <aside className={cn(
-                "fixed top-0 left-0 z-50 h-full w-64 bg-background border-r border-foreground transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+                "fixed top-0 left-0 z-50 h-full w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
                 sidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 {/* Header */}
-                <div className="flex items-center justify-between h-16 px-4 border-b-2 border-foreground">
+                <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border bg-sidebar">
                     <div className="flex items-center gap-2">
-                        <Stethoscope className="h-6 w-6" />
-                        <span className="text-lg font-bold uppercase tracking-tight">hearMD</span>
+                        <Stethoscope className="h-5 w-5" />
+                        <span className="text-lg font-black uppercase tracking-tight">hearMD</span>
                     </div>
                     <Button
                         variant="ghost"
@@ -72,10 +72,10 @@ export default function DashboardLayout({
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all border border-foreground",
+                                    "flex items-center gap-3 px-4 h-10 text-xs font-bold uppercase tracking-wide transition-all duration-200 shadow-none border-2 hover:translate-x-1",
                                     isActive
-                                        ? "bg-foreground text-background"
-                                        : "bg-[var(--background-alt)] text-foreground hover:bg-foreground hover:text-background"
+                                        ? "bg-foreground text-background border-foreground translate-x-1"
+                                        : "bg-transparent text-foreground border-sidebar-border hover:border-foreground"
                                 )}
                                 onClick={() => setSidebarOpen(false)}
                             >
@@ -87,9 +87,9 @@ export default function DashboardLayout({
                 </nav>
 
                 {/* New Consultation Button */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-foreground">
+                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-sidebar-border">
                     <Link href="/dashboard/consultations/new">
-                        <Button variant="primary" className="w-full gap-2">
+                        <Button variant="default" className="w-full h-10 text-xs gap-2 font-bold uppercase tracking-wide border-2 border-foreground hover:bg-background hover:text-foreground shadow-none transition-all duration-200 hover:translate-y-[-2px]">
                             <Plus className="h-4 w-4" />
                             New Consultation
                         </Button>
@@ -98,9 +98,9 @@ export default function DashboardLayout({
             </aside>
 
             {/* Main content */}
-            <div className="lg:pl-64">
+            <div className="lg:pl-64 flex flex-col h-screen overflow-hidden">
                 {/* Top bar */}
-                <header className="sticky top-0 z-30 flex items-center h-16 px-6 border-b-2 border-foreground bg-background">
+                <header className="shrink-0 flex items-center h-16 px-8 border-b border-border-light bg-background">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -110,25 +110,27 @@ export default function DashboardLayout({
                         <Menu className="h-5 w-5" />
                     </Button>
                     <div className="flex-1" />
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <div className="text-right">
-                            <p className="text-xs font-semibold uppercase tracking-wide">Dr. Demo</p>
-                            <p className="text-[0.65rem] text-[var(--muted-foreground)]">Demo Clinic</p>
+                            <p className="text-xs font-bold uppercase tracking-wide">Dr. Demo</p>
+                            <p className="text-[0.65rem] text-muted-foreground font-mono">Demo Clinic</p>
                         </div>
-                        <div className="h-9 w-9 border border-foreground flex items-center justify-center">
+                        <div className="h-9 w-9 border border-border flex items-center justify-center bg-muted">
                             <span className="text-xs font-bold">DD</span>
                         </div>
                     </div>
                 </header>
 
-                {/* Page content */}
-                <main className="p-6 max-w-5xl mx-auto">
-                    {children}
+                {/* Scrollable Page content */}
+                <main className="flex-1 overflow-y-auto p-8 w-full">
+                    <div className="max-w-[1600px] mx-auto">
+                        {children}
+                    </div>
                 </main>
 
-                {/* Footer */}
-                <footer className="p-6 border-t border-[var(--border-light)] max-w-5xl mx-auto">
-                    <div className="flex justify-between items-center text-[0.65rem] text-[var(--muted-foreground)]">
+                {/* Fixed Footer */}
+                <footer className="shrink-0 h-[88px] flex items-center border-t border-sidebar-border w-full bg-background px-8">
+                    <div className="flex justify-between items-center w-full max-w-[1600px] mx-auto text-[0.65rem] text-muted-foreground uppercase tracking-wider">
                         <p>hearMD — AI OPD Assistant</p>
                         <p>Educational/Research Use Only</p>
                     </div>

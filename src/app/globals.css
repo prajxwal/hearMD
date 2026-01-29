@@ -78,13 +78,13 @@
   --chart-3: #000000;
   --chart-4: #000000;
   --chart-5: #000000;
-  --sidebar: #ffffff;
+  --sidebar: #f9f9f9;
   --sidebar-foreground: #000000;
   --sidebar-primary: #000000;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f8f8f8;
+  --sidebar-accent: #eeeeee;
   --sidebar-accent-foreground: #000000;
-  --sidebar-border: #000000;
+  --sidebar-border: #e4e4e4;
   --sidebar-ring: #000000;
 }
 
