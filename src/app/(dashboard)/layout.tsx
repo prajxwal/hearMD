@@ -157,7 +157,7 @@ export default function DashboardLayout({
                 </nav>
 
                 {/* Bottom section with New Consultation + Logout */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-sidebar-border space-y-3">
+                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-sidebar-border space-y-6">
                     <Link href="/dashboard/consultations/new">
                         <Button variant="default" className="w-full h-10 text-xs gap-2 font-bold uppercase tracking-wide border-2 border-foreground hover:bg-background hover:text-foreground shadow-none transition-all duration-200 hover:translate-y-[-2px]">
                             <Plus className="h-4 w-4" />
@@ -166,7 +166,7 @@ export default function DashboardLayout({
                     </Link>
                     <Button
                         variant="outline"
-                        className="w-full h-10 text-xs gap-2 font-bold uppercase tracking-wide"
+                        className="w-full h-10 text-xs gap-2 font-bold uppercase tracking-wide mt-6"
                         onClick={handleLogout}
                         disabled={loggingOut}
                     >

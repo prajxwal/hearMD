@@ -3,44 +3,117 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CalendarDays, Users, FileText, Clock, Plus, Settings, ChevronRight, Loader2 } from 'lucide-react'
+import { CalendarDays, Users, FileText, Clock, Plus, Settings, ChevronRight, Loader2, CheckCircle2, Circle } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 interface DoctorProfile {
     full_name: string
+    clinic_name: string | null
+}
+
+interface DashboardStats {
+    todaysConsultations: number
+    totalPatients: number
+    pendingNotes: number
+}
+
+interface GettingStartedStatus {
+    clinicConfigured: boolean
+    hasPatients: boolean
+    hasConsultations: boolean
 }
 
 export default function DashboardPage() {
     const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
+    const [stats, setStats] = useState<DashboardStats>({
+        todaysConsultations: 0,
+        totalPatients: 0,
+        pendingNotes: 0
+    })
+    const [gettingStarted, setGettingStarted] = useState<GettingStartedStatus>({
+        clinicConfigured: false,
+        hasPatients: false,
+        hasConsultations: false
+    })
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
 
     useEffect(() => {
-        async function fetchDoctor() {
+        async function fetchDashboardData() {
             try {
                 const { data: { user } } = await supabase.auth.getUser()
                 if (!user) return
 
-                const { data, error } = await supabase
+                // Fetch doctor profile
+                const { data: doctorData } = await supabase
                     .from('doctors')
-                    .select('full_name')
+                    .select('full_name, clinic_name')
                     .eq('user_id', user.id)
                     .single()
 
-                if (error) throw error
-                setDoctor(data)
+                if (doctorData) {
+                    setDoctor(doctorData)
+
+                    // Check if clinic is configured (has name)
+                    setGettingStarted(prev => ({
+                        ...prev,
+                        clinicConfigured: !!doctorData.clinic_name && doctorData.clinic_name.trim() !== ''
+                    }))
+                }
+
+                // Fetch total patients count
+                const { count: patientCount } = await supabase
+                    .from('patients')
+                    .select('*', { count: 'exact', head: true })
+
+                const totalPatients = patientCount || 0
+                setStats(prev => ({ ...prev, totalPatients }))
+                setGettingStarted(prev => ({ ...prev, hasPatients: totalPatients > 0 }))
+
+                // Fetch today's consultations count
+                const today = new Date().toISOString().split('T')[0]
+                const { count: todayCount } = await supabase
+                    .from('consultations')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('created_at', today)
+
+                setStats(prev => ({ ...prev, todaysConsultations: todayCount || 0 }))
+
+                // Fetch total consultations (for getting started)
+                const { count: totalConsultations } = await supabase
+                    .from('consultations')
+                    .select('*', { count: 'exact', head: true })
+
+                setGettingStarted(prev => ({ ...prev, hasConsultations: (totalConsultations || 0) > 0 }))
+
+                // Fetch pending notes (consultations without completed clinical notes)
+                const { count: pendingCount } = await supabase
+                    .from('consultations')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'in_progress')
+
+                setStats(prev => ({ ...prev, pendingNotes: pendingCount || 0 }))
+
             } catch (error) {
-                console.error('Error fetching doctor:', error)
+                console.error('Error fetching dashboard data:', error)
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchDoctor()
+        fetchDashboardData()
     }, [supabase])
 
     const displayName = doctor?.full_name || 'Doctor'
+
+    // Calculate completion percentage
+    const completedSteps = [
+        gettingStarted.clinicConfigured,
+        gettingStarted.hasPatients,
+        gettingStarted.hasConsultations
+    ].filter(Boolean).length
+    const allComplete = completedSteps === 3
 
     return (
         <div className="space-y-12">
@@ -65,24 +138,26 @@ export default function DashboardPage() {
                     <section className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operational Metrics</h2>
-                            <span className="text-[0.65rem] font-mono text-muted-foreground/70">LIVE UPDATE</span>
+                            <span className="text-[0.65rem] font-mono text-muted-foreground/70">
+                                {loading ? 'LOADING...' : 'LIVE'}
+                            </span>
                         </div>
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                             <StatCard
                                 title="Today's Consultations"
-                                value="0"
+                                value={loading ? '--' : stats.todaysConsultations.toString()}
                                 label="Scheduled"
                                 icon={CalendarDays}
                             />
                             <StatCard
                                 title="Total Patients"
-                                value="0"
+                                value={loading ? '--' : stats.totalPatients.toString()}
                                 label="Registered"
                                 icon={Users}
                             />
                             <StatCard
                                 title="Pending Notes"
-                                value="0"
+                                value={loading ? '--' : stats.pendingNotes.toString()}
                                 label="Action Required"
                                 icon={FileText}
                             />
@@ -122,31 +197,80 @@ export default function DashboardPage() {
                         <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">System Status</h2>
                         <Card className="border-border-light bg-card/50">
                             <CardHeader className="pb-3">
-                                <CardTitle>Getting Started</CardTitle>
-                                <CardDescription>Complete setup to fully activate hearMD</CardDescription>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>Getting Started</CardTitle>
+                                    {allComplete && (
+                                        <span className="text-xs text-green-500 font-bold uppercase">✓ Complete</span>
+                                    )}
+                                </div>
+                                <CardDescription>
+                                    {allComplete
+                                        ? 'hearMD is fully activated!'
+                                        : `${completedSteps}/3 steps completed`
+                                    }
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="flex gap-4 group cursor-pointer">
-                                    <div className="h-6 w-6 shrink-0 rounded-full border border-foreground flex items-center justify-center text-xs font-bold group-hover:bg-foreground group-hover:text-background transition-colors">1</div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-bold group-hover:underline decoration-1 underline-offset-4">Configure clinic details</p>
-                                        <p className="text-xs text-muted-foreground">Add your clinic name and branding</p>
+                                {/* Step 1: Configure Clinic */}
+                                <Link href="/dashboard/settings" className="block">
+                                    <div className={`flex gap-4 group cursor-pointer ${gettingStarted.clinicConfigured ? 'opacity-60' : ''}`}>
+                                        <div className={`h-6 w-6 shrink-0 rounded-full border flex items-center justify-center text-xs font-bold transition-colors ${gettingStarted.clinicConfigured
+                                                ? 'bg-green-500 border-green-500 text-white'
+                                                : 'border-foreground group-hover:bg-foreground group-hover:text-background'
+                                            }`}>
+                                            {gettingStarted.clinicConfigured ? <CheckCircle2 className="h-4 w-4" /> : '1'}
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className={`text-sm font-bold ${!gettingStarted.clinicConfigured ? 'group-hover:underline decoration-1 underline-offset-4' : ''}`}>
+                                                Configure clinic details
+                                                {gettingStarted.clinicConfigured && <span className="text-green-500 ml-2">✓</span>}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Add your clinic name and branding</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex gap-4 group cursor-pointer">
-                                    <div className="h-6 w-6 shrink-0 rounded-full border border-border-light bg-sidebar-accent flex items-center justify-center text-xs font-bold text-muted-foreground">2</div>
-                                    <div className="space-y-1 opacity-60">
-                                        <p className="text-sm font-bold">Add your first patient</p>
-                                        <p className="text-xs text-muted-foreground">Register patients in the system</p>
+                                </Link>
+
+                                {/* Step 2: Add Patient */}
+                                <Link href="/dashboard/patients" className="block">
+                                    <div className={`flex gap-4 group cursor-pointer ${gettingStarted.hasPatients ? 'opacity-60' : ''}`}>
+                                        <div className={`h-6 w-6 shrink-0 rounded-full border flex items-center justify-center text-xs font-bold transition-colors ${gettingStarted.hasPatients
+                                                ? 'bg-green-500 border-green-500 text-white'
+                                                : !gettingStarted.clinicConfigured
+                                                    ? 'border-border-light bg-sidebar-accent text-muted-foreground'
+                                                    : 'border-foreground group-hover:bg-foreground group-hover:text-background'
+                                            }`}>
+                                            {gettingStarted.hasPatients ? <CheckCircle2 className="h-4 w-4" /> : '2'}
+                                        </div>
+                                        <div className={`space-y-1 ${!gettingStarted.clinicConfigured && !gettingStarted.hasPatients ? 'opacity-60' : ''}`}>
+                                            <p className={`text-sm font-bold ${gettingStarted.clinicConfigured && !gettingStarted.hasPatients ? 'group-hover:underline decoration-1 underline-offset-4' : ''}`}>
+                                                Add your first patient
+                                                {gettingStarted.hasPatients && <span className="text-green-500 ml-2">✓</span>}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Register patients in the system</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex gap-4 group cursor-pointer">
-                                    <div className="h-6 w-6 shrink-0 rounded-full border border-border-light bg-sidebar-accent flex items-center justify-center text-xs font-bold text-muted-foreground">3</div>
-                                    <div className="space-y-1 opacity-60">
-                                        <p className="text-sm font-bold">Start a consultation</p>
-                                        <p className="text-xs text-muted-foreground">Record and document your first OPD visit</p>
+                                </Link>
+
+                                {/* Step 3: Start Consultation */}
+                                <Link href="/dashboard/consultations/new" className="block">
+                                    <div className={`flex gap-4 group cursor-pointer ${gettingStarted.hasConsultations ? 'opacity-60' : ''}`}>
+                                        <div className={`h-6 w-6 shrink-0 rounded-full border flex items-center justify-center text-xs font-bold transition-colors ${gettingStarted.hasConsultations
+                                                ? 'bg-green-500 border-green-500 text-white'
+                                                : !gettingStarted.hasPatients
+                                                    ? 'border-border-light bg-sidebar-accent text-muted-foreground'
+                                                    : 'border-foreground group-hover:bg-foreground group-hover:text-background'
+                                            }`}>
+                                            {gettingStarted.hasConsultations ? <CheckCircle2 className="h-4 w-4" /> : '3'}
+                                        </div>
+                                        <div className={`space-y-1 ${!gettingStarted.hasPatients && !gettingStarted.hasConsultations ? 'opacity-60' : ''}`}>
+                                            <p className={`text-sm font-bold ${gettingStarted.hasPatients && !gettingStarted.hasConsultations ? 'group-hover:underline decoration-1 underline-offset-4' : ''}`}>
+                                                Start a consultation
+                                                {gettingStarted.hasConsultations && <span className="text-green-500 ml-2">✓</span>}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Record and document your first OPD visit</p>
+                                        </div>
                                     </div>
-                                </div>
+                                </Link>
                             </CardContent>
                         </Card>
                     </section>
