@@ -1,15 +1,109 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Settings, Building2, Palette, User, Sun, Moon } from 'lucide-react'
+import { Building2, User, Sun, Moon, Loader2 } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+
+interface DoctorProfile {
+    id: string
+    user_id: string
+    full_name: string
+    specialization: string
+    clinic_name: string
+    registration_number: string | null
+}
 
 export default function SettingsPage() {
     const { theme, toggleTheme } = useTheme()
+    const supabase = createClient()
+
+    // Loading states
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+
+    // Doctor profile state
+    const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
+
+    // Form fields
+    const [fullName, setFullName] = useState('')
+    const [specialization, setSpecialization] = useState('')
+    const [clinicName, setClinicName] = useState('')
+    const [registrationNumber, setRegistrationNumber] = useState('')
+
+    // Fetch doctor profile on mount
+    useEffect(() => {
+        async function fetchDoctorProfile() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
+
+                const { data, error } = await supabase
+                    .from('doctors')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (error) throw error
+
+                if (data) {
+                    setDoctor(data)
+                    setFullName(data.full_name || '')
+                    setSpecialization(data.specialization || '')
+                    setClinicName(data.clinic_name || '')
+                    setRegistrationNumber(data.registration_number || '')
+                }
+            } catch (error) {
+                console.error('Error fetching doctor profile:', error)
+                toast.error('Failed to load profile')
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchDoctorProfile()
+    }, [supabase])
+
+    // Save doctor profile
+    const handleSaveProfile = async () => {
+        if (!doctor) return
+
+        setSaving(true)
+        try {
+            const { error } = await supabase
+                .from('doctors')
+                .update({
+                    full_name: fullName,
+                    specialization: specialization,
+                    clinic_name: clinicName,
+                    registration_number: registrationNumber || null,
+                })
+                .eq('id', doctor.id)
+
+            if (error) throw error
+
+            toast.success('Profile saved successfully!')
+        } catch (error) {
+            console.error('Error saving profile:', error)
+            toast.error('Failed to save profile')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">
@@ -56,40 +150,6 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Clinic Settings */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5" />
-                        Clinic Details
-                    </CardTitle>
-                    <CardDescription>
-                        Configure your clinic information for prescriptions and reports
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="clinic-name">Clinic Name</Label>
-                            <Input id="clinic-name" placeholder="Enter clinic name" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="clinic-phone">Phone</Label>
-                            <Input id="clinic-phone" placeholder="+91 98765 43210" />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="clinic-address">Address</Label>
-                        <Input id="clinic-address" placeholder="Enter clinic address" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="clinic-email">Email</Label>
-                        <Input id="clinic-email" type="email" placeholder="clinic@example.com" />
-                    </div>
-                    <Button>Save Clinic Details</Button>
-                </CardContent>
-            </Card>
-
             {/* Doctor Profile */}
             <Card>
                 <CardHeader>
@@ -104,69 +164,83 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="doctor-name">Full Name</Label>
-                            <Input id="doctor-name" placeholder="Dr. Full Name" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="qualification">Qualification</Label>
-                            <Input id="qualification" placeholder="MBBS, MD" />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="registration">Registration Number</Label>
-                            <Input id="registration" placeholder="MCI/State Registration No." />
+                            <Label htmlFor="full-name">Full Name</Label>
+                            <Input
+                                id="full-name"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="Dr. Full Name"
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="specialization">Specialization</Label>
-                            <Input id="specialization" placeholder="General Medicine" />
+                            <Input
+                                id="specialization"
+                                value={specialization}
+                                onChange={(e) => setSpecialization(e.target.value)}
+                                placeholder="Cardiology, General Medicine..."
+                            />
                         </div>
                     </div>
-                    <Button>Save Profile</Button>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="clinic-name">Clinic Name</Label>
+                            <Input
+                                id="clinic-name"
+                                value={clinicName}
+                                onChange={(e) => setClinicName(e.target.value)}
+                                placeholder="Your Clinic Name"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="registration">Registration Number</Label>
+                            <Input
+                                id="registration"
+                                value={registrationNumber}
+                                onChange={(e) => setRegistrationNumber(e.target.value)}
+                                placeholder="MCI/State Registration No."
+                            />
+                        </div>
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={saving}>
+                        {saving ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Profile'
+                        )}
+                    </Button>
                 </CardContent>
             </Card>
 
-            {/* White Label / Branding */}
+            {/* Clinic Details - Display Only */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Palette className="h-5 w-5" />
-                        Branding
+                        <Building2 className="h-5 w-5" />
+                        Clinic Details
                     </CardTitle>
                     <CardDescription>
-                        Customize the appearance for patient-facing documents
+                        Your clinic information (from your profile)
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="primary-color">Primary Color</Label>
-                            <div className="flex gap-2">
-                                <Input id="primary-color" type="color" defaultValue="#000000" className="w-16 h-10 p-1" />
-                                <Input placeholder="#000000" className="flex-1" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="secondary-color">Secondary Color</Label>
-                            <div className="flex gap-2">
-                                <Input id="secondary-color" type="color" defaultValue="#FFFFFF" className="w-16 h-10 p-1" />
-                                <Input placeholder="#FFFFFF" className="flex-1" />
-                            </div>
-                        </div>
-                    </div>
+                <CardContent>
                     <div className="space-y-2">
-                        <Label>Clinic Logo</Label>
-                        <div className="flex items-center gap-4">
-                            <div className="h-20 w-20 border border-foreground flex items-center justify-center text-foreground/70">
-                                Logo
-                            </div>
-                            <Button>Upload Logo</Button>
-                        </div>
-                        <p className="text-xs text-foreground/70">
-                            Recommended: 200x200px, PNG or JPG
+                        <p className="text-sm">
+                            <span className="text-muted-foreground">Clinic: </span>
+                            <span className="font-medium">{clinicName || 'Not set'}</span>
+                        </p>
+                        <p className="text-sm">
+                            <span className="text-muted-foreground">Doctor: </span>
+                            <span className="font-medium">{fullName || 'Not set'}</span>
+                        </p>
+                        <p className="text-sm">
+                            <span className="text-muted-foreground">Specialization: </span>
+                            <span className="font-medium">{specialization || 'Not set'}</span>
                         </p>
                     </div>
-                    <Button>Save Branding</Button>
                 </CardContent>
             </Card>
 
@@ -174,7 +248,7 @@ export default function SettingsPage() {
 
             <div className="flex justify-between items-center text-sm text-foreground/70">
                 <p>hearMD v1.0.0 (MVP)</p>
-                <p>© 2024 Your Clinic Name</p>
+                <p>© 2024 {clinicName || 'Your Clinic Name'}</p>
             </div>
         </div>
     )

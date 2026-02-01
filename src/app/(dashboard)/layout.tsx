@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
     Stethoscope,
     Users,
@@ -9,11 +10,19 @@ import {
     Settings,
     Plus,
     Menu,
-    X
+    X,
+    LogOut,
+    Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+
+interface DoctorProfile {
+    full_name: string
+    clinic_name: string
+}
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: CalendarDays },
@@ -28,7 +37,68 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     const pathname = usePathname()
+    const router = useRouter()
+    const supabase = createClient()
+
     const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [loggingOut, setLoggingOut] = useState(false)
+
+    // Fetch doctor profile
+    useEffect(() => {
+        async function fetchDoctor() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
+
+                const { data, error } = await supabase
+                    .from('doctors')
+                    .select('full_name, clinic_name')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (error) throw error
+                setDoctor(data)
+            } catch (error) {
+                console.error('Error fetching doctor:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchDoctor()
+    }, [supabase])
+
+    // Handle logout
+    const handleLogout = async () => {
+        setLoggingOut(true)
+        try {
+            const { error } = await supabase.auth.signOut()
+            if (error) throw error
+            toast.success('Logged out successfully')
+            router.push('/login')
+        } catch (error) {
+            console.error('Logout error:', error)
+            toast.error('Failed to log out')
+        } finally {
+            setLoggingOut(false)
+        }
+    }
+
+    // Get initials from name
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .filter(part => part.length > 0)
+            .slice(0, 2)
+            .map(part => part[0].toUpperCase())
+            .join('')
+    }
+
+    const displayName = doctor?.full_name || 'Loading...'
+    const displayClinic = doctor?.clinic_name || ''
+    const initials = doctor?.full_name ? getInitials(doctor.full_name) : '--'
 
     return (
         <div className="min-h-screen bg-background">
@@ -86,14 +156,27 @@ export default function DashboardLayout({
                     })}
                 </nav>
 
-                {/* New Consultation Button */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-sidebar-border">
+                {/* Bottom section with New Consultation + Logout */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-sidebar-border space-y-3">
                     <Link href="/dashboard/consultations/new">
                         <Button variant="default" className="w-full h-10 text-xs gap-2 font-bold uppercase tracking-wide border-2 border-foreground hover:bg-background hover:text-foreground shadow-none transition-all duration-200 hover:translate-y-[-2px]">
                             <Plus className="h-4 w-4" />
                             New Consultation
                         </Button>
                     </Link>
+                    <Button
+                        variant="outline"
+                        className="w-full h-10 text-xs gap-2 font-bold uppercase tracking-wide"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                    >
+                        {loggingOut ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <LogOut className="h-4 w-4" />
+                        )}
+                        Logout
+                    </Button>
                 </div>
             </aside>
 
@@ -112,11 +195,19 @@ export default function DashboardLayout({
                     <div className="flex-1" />
                     <div className="flex items-center gap-4">
                         <div className="text-right">
-                            <p className="text-xs font-bold uppercase tracking-wide">Dr. Demo</p>
-                            <p className="text-[0.65rem] text-muted-foreground font-mono">Demo Clinic</p>
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-xs font-bold uppercase tracking-wide">{displayName}</p>
+                                    <p className="text-[0.65rem] text-muted-foreground font-mono">{displayClinic}</p>
+                                </>
+                            )}
                         </div>
                         <div className="h-9 w-9 border border-border flex items-center justify-center bg-muted">
-                            <span className="text-xs font-bold">DD</span>
+                            <span className="text-xs font-bold">{initials}</span>
                         </div>
                     </div>
                 </header>

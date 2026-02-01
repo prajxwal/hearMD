@@ -1,15 +1,60 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CalendarDays, Users, FileText, Clock, Plus, Settings, ChevronRight } from 'lucide-react'
+import { CalendarDays, Users, FileText, Clock, Plus, Settings, ChevronRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+
+interface DoctorProfile {
+    full_name: string
+}
 
 export default function DashboardPage() {
+    const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
+    const [loading, setLoading] = useState(true)
+    const supabase = createClient()
+
+    useEffect(() => {
+        async function fetchDoctor() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
+
+                const { data, error } = await supabase
+                    .from('doctors')
+                    .select('full_name')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (error) throw error
+                setDoctor(data)
+            } catch (error) {
+                console.error('Error fetching doctor:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchDoctor()
+    }, [supabase])
+
+    const displayName = doctor?.full_name || 'Doctor'
+
     return (
         <div className="space-y-12">
             <div>
                 <h1 className="text-2xl font-black uppercase tracking-tight mb-1">Dashboard</h1>
                 <p className="text-muted-foreground font-mono text-xs">
-                    Welcome back, Dr. Demo. Here represents your clinic's operational status.
+                    {loading ? (
+                        <span className="flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Loading...
+                        </span>
+                    ) : (
+                        `Welcome back, ${displayName}. Here's your clinic's operational status.`
+                    )}
                 </p>
             </div>
 
@@ -126,7 +171,7 @@ export default function DashboardPage() {
     )
 }
 
-function StatCard({ title, value, label, icon: Icon }: { title: string, value: string, label: string, icon: any }) {
+function StatCard({ title, value, label, icon: Icon }: { title: string, value: string, label: string, icon: React.ComponentType<{ className?: string }> }) {
     return (
         <Card className="border border-border-light bg-sidebar/50 shadow-none hover:border-foreground transition-colors group">
             <CardContent className="p-6 flex flex-col items-start gap-4 h-full justify-between">
