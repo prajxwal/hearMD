@@ -1,101 +1,120 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import Link from 'next/link'
-import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const router = useRouter()
-    const supabase = createClient()
+    const router = useRouter();
+    const supabase = createClient();
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
+        e.preventDefault();
+
+        if (!email || !password) {
+            toast.error("Please fill in all fields");
+            return;
+        }
+
+        setLoading(true);
 
         try {
             const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
-            })
+            });
 
-            if (error) {
-                toast.error(error.message)
-                return
-            }
+            if (error) throw error;
 
-            toast.success('Signed in successfully')
-            router.refresh()
-            router.push('/dashboard/consultations/new')
-        } catch (error) {
-            console.error('Login error:', error)
-            toast.error('An unexpected error occurred')
+            router.push("/dashboard");
+            router.refresh();
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Login failed";
+            toast.error(message);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     return (
-        <div className="space-y-6">
-            <div className="space-y-2 text-center">
-                <h1 className="text-xl font-bold uppercase tracking-tight">Login</h1>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Enter your credentials to access the system
+        <div className="min-h-screen flex items-center justify-center p-8">
+            <div className="w-full max-w-md space-y-8">
+                {/* Header */}
+                <div className="text-center space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tight">hearMD</h1>
+                    <p className="text-sm text-[var(--muted)]">AI OPD Assistant</p>
+                </div>
+
+                {/* Login Form */}
+                <form onSubmit={handleLogin} className="space-y-6">
+                    <div className="space-y-4">
+                        {/* Email */}
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide">
+                                Email
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="doctor@clinic.com"
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                                autoComplete="email"
+                            />
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full h-12 px-4 pr-12 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold uppercase text-[var(--muted)] hover:text-[var(--foreground)]"
+                                >
+                                    {showPassword ? "Hide" : "Show"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-12 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                        {loading ? "Signing in..." : "Sign In"}
+                    </button>
+                </form>
+
+                {/* Sign Up Link */}
+                <p className="text-center text-sm text-[var(--muted)]">
+                    Don&apos;t have an account?{" "}
+                    <Link href="/signup" className="text-[var(--foreground)] font-bold hover:underline">
+                        Sign Up
+                    </Link>
                 </p>
             </div>
-
-            <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="doctor@clinic.com"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-10"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="password">Password</Label>
-                    </div>
-                    <Input
-                        id="password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-10"
-                    />
-                </div>
-                <Button type="submit" className="w-full h-10 font-bold uppercase" disabled={loading}>
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Signing In...
-                        </>
-                    ) : (
-                        'Sign In'
-                    )}
-                </Button>
-            </form>
-
-            <div className="text-center text-xs">
-                <span className="text-muted-foreground">Don&apos;t have an account? </span>
-                <Link href="/signup" className="font-bold hover:underline">
-                    Sign Up
-                </Link>
-            </div>
         </div>
-    )
+    );
 }

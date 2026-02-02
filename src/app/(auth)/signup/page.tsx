@@ -1,109 +1,276 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import Link from 'next/link'
-import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+
+const specializations = [
+    "General Medicine",
+    "Pediatrics",
+    "Cardiology",
+    "Dermatology",
+    "Orthopedics",
+    "ENT",
+    "Gynecology",
+    "Other",
+];
 
 export default function SignupPage() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const router = useRouter()
-    const supabase = createClient()
+    const router = useRouter();
+    const supabase = createClient();
+
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [registrationNumber, setRegistrationNumber] = useState("");
+    const [specialization, setSpecialization] = useState("");
+    const [customSpecialization, setCustomSpecialization] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const validateForm = (): boolean => {
+        if (!fullName || fullName.length < 3) {
+            toast.error("Full name must be at least 3 characters");
+            return false;
+        }
+
+        if (!email) {
+            toast.error("Email is required");
+            return false;
+        }
+
+        if (!password || password.length < 8) {
+            toast.error("Password must be at least 8 characters");
+            return false;
+        }
+
+        // Password strength check
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        if (!hasUpper || !hasLower || !hasNumber) {
+            toast.error("Password must contain uppercase, lowercase, and a number");
+            return false;
+        }
+
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
+            return false;
+        }
+
+        if (!registrationNumber) {
+            toast.error("Medical registration number is required");
+            return false;
+        }
+
+        if (!specialization) {
+            toast.error("Please select a specialization");
+            return false;
+        }
+
+        if (specialization === "Other" && !customSpecialization) {
+            toast.error("Please enter your specialization");
+            return false;
+        }
+
+        return true;
+    };
 
     const handleSignup = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
+        e.preventDefault();
+
+        if (!validateForm()) return;
+
+        setLoading(true);
 
         try {
-            const { error } = await supabase.auth.signUp({
+            // Create auth user
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
-                options: {
-                    emailRedirectTo: `${location.origin}/auth/callback`,
-                },
-            })
+            });
 
-            if (error) {
-                toast.error(error.message)
-                return
-            }
+            if (authError) throw authError;
+            if (!authData.user) throw new Error("Failed to create account");
 
-            toast.success('Account created successfully! You can now sign in.')
-            // Auto login logic or redirect to login? 
-            // Supabase auto signs in on signup if confirm not required, 
-            // but usually best to just let them login or handle session.
-            // For simplicity/speed -> redirect to login or dashboard.
-            // If email confirm is on, they need to check email.
-            // Assuming default Supabase setup, email confirm might be on.
-            // But user said "no extra fields", implying fast access.
+            // Create doctor profile
+            const { error: profileError } = await supabase.from("doctors").insert({
+                user_id: authData.user.id,
+                full_name: fullName,
+                email: email,
+                registration_number: registrationNumber,
+                specialization: specialization === "Other" ? customSpecialization : specialization,
+            });
 
-            router.push('/login')
-        } catch (error) {
-            console.error('Signup error:', error)
-            toast.error('An unexpected error occurred')
+            if (profileError) throw profileError;
+
+            toast.success(`Welcome, Dr. ${fullName}!`);
+            router.push("/dashboard");
+            router.refresh();
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Signup failed";
+            toast.error(message);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     return (
-        <div className="space-y-6">
-            <div className="space-y-2 text-center">
-                <h1 className="text-xl font-bold uppercase tracking-tight">Create Account</h1>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Join hearMD to streamline your OPD
+        <div className="min-h-screen flex items-center justify-center p-8">
+            <div className="w-full max-w-md space-y-8">
+                {/* Header */}
+                <div className="text-center space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tight">hearMD</h1>
+                    <p className="text-sm text-[var(--muted)]">Create your account</p>
+                </div>
+
+                {/* Signup Form */}
+                <form onSubmit={handleSignup} className="space-y-6">
+                    <div className="space-y-4">
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                            <label htmlFor="fullName" className="block text-xs font-bold uppercase tracking-wide">
+                                Full Name *
+                            </label>
+                            <input
+                                id="fullName"
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="Dr. Rajesh Kumar"
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                            />
+                        </div>
+
+                        {/* Email */}
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide">
+                                Email *
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="doctor@clinic.com"
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                                autoComplete="email"
+                            />
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide">
+                                Password *
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Min 8 chars, 1 upper, 1 lower, 1 number"
+                                    className="w-full h-12 px-4 pr-12 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold uppercase text-[var(--muted)] hover:text-[var(--foreground)]"
+                                >
+                                    {showPassword ? "Hide" : "Show"}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-wide">
+                                Confirm Password *
+                            </label>
+                            <input
+                                id="confirmPassword"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                            />
+                        </div>
+
+                        {/* Registration Number */}
+                        <div className="space-y-2">
+                            <label htmlFor="registrationNumber" className="block text-xs font-bold uppercase tracking-wide">
+                                Medical Registration Number *
+                            </label>
+                            <input
+                                id="registrationNumber"
+                                type="text"
+                                value={registrationNumber}
+                                onChange={(e) => setRegistrationNumber(e.target.value)}
+                                placeholder="MH-2012-12345"
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                            />
+                        </div>
+
+                        {/* Specialization */}
+                        <div className="space-y-2">
+                            <label htmlFor="specialization" className="block text-xs font-bold uppercase tracking-wide">
+                                Specialization *
+                            </label>
+                            <select
+                                id="specialization"
+                                value={specialization}
+                                onChange={(e) => setSpecialization(e.target.value)}
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                            >
+                                <option value="">Select specialization</option>
+                                {specializations.map((spec) => (
+                                    <option key={spec} value={spec}>
+                                        {spec}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Custom Specialization */}
+                        {specialization === "Other" && (
+                            <div className="space-y-2">
+                                <label htmlFor="customSpecialization" className="block text-xs font-bold uppercase tracking-wide">
+                                    Your Specialization *
+                                </label>
+                                <input
+                                    id="customSpecialization"
+                                    type="text"
+                                    value={customSpecialization}
+                                    onChange={(e) => setCustomSpecialization(e.target.value)}
+                                    placeholder="Enter your specialization"
+                                    className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-0"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-12 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                        {loading ? "Creating account..." : "Create Account"}
+                    </button>
+                </form>
+
+                {/* Login Link */}
+                <p className="text-center text-sm text-[var(--muted)]">
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-[var(--foreground)] font-bold hover:underline">
+                        Sign In
+                    </Link>
                 </p>
             </div>
-
-            <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="doctor@clinic.com"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-10"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-10"
-                    />
-                </div>
-                <Button type="submit" className="w-full h-10 font-bold uppercase" disabled={loading}>
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating Account...
-                        </>
-                    ) : (
-                        'Sign Up'
-                    )}
-                </Button>
-            </form>
-
-            <div className="text-center text-xs">
-                <span className="text-muted-foreground">Already have an account? </span>
-                <Link href="/login" className="font-bold hover:underline">
-                    Login
-                </Link>
-            </div>
         </div>
-    )
+    );
 }

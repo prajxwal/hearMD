@@ -1,0 +1,38 @@
+[00:00:01.321] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:01.702] Server  LOG     ✓ Ready in 1311ms
+[00:00:08.258] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:19.827] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:02:17.747] Server  LOG       Reload env: .env.local
+[00:02:18.381] Server  LOG     ✓ Compiled in 548ms
+[00:02:18.454] Server  ERROR   ⨯ Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+[00:02:19.045] Server  ERROR   ⨯ Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+[00:02:19.838] Browser ERROR   uncaughtError: Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+[00:02:23.952] Server  LOG       Reload env: .env.local
+[00:02:40.809] Server  ERROR   ⨯ Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+[00:02:41.491] Browser ERROR   uncaughtError: Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+[00:03:06.413] Server  LOG       Reload env: .env.local
+[00:03:08.819] Server  LOG     ✓ Compiled in 1518ms
+[00:03:15.570] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:03:17.162] Server  LOG       Reload env: .env.local
+[00:03:17.671] Server  LOG     ✓ Compiled in 285ms
+[00:03:17.822] Server  LOG     ✓ Compiled in 148ms
