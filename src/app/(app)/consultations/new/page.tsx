@@ -256,8 +256,8 @@ export default function NewConsultationPage() {
                     >
                         <div
                             className={`w-6 h-6 flex items-center justify-center border-2 ${step === s
-                                    ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
-                                    : "border-[var(--muted)]"
+                                ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
+                                : "border-[var(--muted)]"
                                 }`}
                         >
                             {i + 1}
@@ -280,8 +280,8 @@ export default function NewConsultationPage() {
                                 setSelectedPatient(null);
                             }}
                             className={`h-10 px-4 text-sm font-bold uppercase tracking-wide border-2 ${!searchMode
-                                    ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
-                                    : "border-[var(--border)]"
+                                ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
+                                : "border-[var(--border)]"
                                 }`}
                         >
                             New Patient
@@ -289,8 +289,8 @@ export default function NewConsultationPage() {
                         <button
                             onClick={() => setSearchMode(true)}
                             className={`h-10 px-4 text-sm font-bold uppercase tracking-wide border-2 ${searchMode
-                                    ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
-                                    : "border-[var(--border)]"
+                                ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
+                                : "border-[var(--border)]"
                                 }`}
                         >
                             Returning Patient
@@ -312,7 +312,7 @@ export default function NewConsultationPage() {
                             </div>
 
                             {selectedPatient ? (
-                                <div className="p-4 border-2 border-[var(--foreground)] bg-black/5">
+                                <div className="p-4 border-2 border-[var(--foreground)] bg-[var(--surface)]">
                                     <p className="font-bold">{selectedPatient.name}</p>
                                     <p className="text-sm text-[var(--muted)]">
                                         {selectedPatient.age} years • {selectedPatient.gender}
@@ -325,7 +325,7 @@ export default function NewConsultationPage() {
                                             <button
                                                 key={patient.id}
                                                 onClick={() => setSelectedPatient(patient)}
-                                                className="w-full flex items-center justify-between p-4 hover:bg-black/5 text-left"
+                                                className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface)] text-left"
                                             >
                                                 <div>
                                                     <p className="font-bold">{patient.name}</p>
@@ -377,7 +377,7 @@ export default function NewConsultationPage() {
                                     <select
                                         value={patientGender}
                                         onChange={(e) => setPatientGender(e.target.value)}
-                                        className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                                        className="w-full h-12 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
                                     >
                                         <option value="">Select</option>
                                         <option value="Male">Male</option>
@@ -390,7 +390,7 @@ export default function NewConsultationPage() {
                     )}
 
                     {/* Consent */}
-                    <label className="flex items-start gap-3 p-4 border-2 border-[var(--border)] cursor-pointer hover:bg-black/5">
+                    <label className="flex items-start gap-3 p-4 border-2 border-[var(--border)] cursor-pointer hover:bg-[var(--surface)]">
                         <input
                             type="checkbox"
                             checked={consent}
@@ -495,7 +495,7 @@ export default function NewConsultationPage() {
                                             );
                                             setNotes({ ...notes, historyOfPresentIllness: updated });
                                         }}
-                                        className="px-3 border-2 border-[var(--border)] hover:bg-black/5"
+                                        className="px-3 border-2 border-[var(--border)] hover:opacity-70"
                                     >
                                         ×
                                     </button>
@@ -543,7 +543,7 @@ export default function NewConsultationPage() {
                                             );
                                             setNotes({ ...notes, examination: updated });
                                         }}
-                                        className="px-3 border-2 border-[var(--border)] hover:bg-black/5"
+                                        className="px-3 border-2 border-[var(--border)] hover:opacity-70"
                                     >
                                         ×
                                     </button>
@@ -594,7 +594,7 @@ export default function NewConsultationPage() {
                         <h2 className="text-xl font-bold">Prescription</h2>
                         <button
                             onClick={addMedication}
-                            className="h-10 px-4 flex items-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:bg-black/5"
+                            className="h-10 px-4 flex items-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:opacity-80"
                         >
                             <Plus className="h-4 w-4" />
                             Add Medication
@@ -650,7 +650,7 @@ export default function NewConsultationPage() {
                                                 onChange={(e) =>
                                                     updateMedication(i, "dosage", e.target.value)
                                                 }
-                                                className="w-full h-10 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                                                className="w-full h-10 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
                                             >
                                                 <option value="">Select</option>
                                                 <option value="1-0-1">1-0-1</option>
@@ -670,7 +670,7 @@ export default function NewConsultationPage() {
                                                 onChange={(e) =>
                                                     updateMedication(i, "timing", e.target.value)
                                                 }
-                                                className="w-full h-10 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                                                className="w-full h-10 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
                                             >
                                                 <option value="After food">After food</option>
                                                 <option value="Before food">Before food</option>
