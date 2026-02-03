@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Mic, Square, Search, Plus, CheckCircle } from "lucide-react";
+import { Mic, Square, Search, Plus, CheckCircle, Sun, CloudSun, Moon } from "lucide-react";
 
 interface Patient {
     id: string;
@@ -48,7 +48,7 @@ export default function NewConsultationPage() {
 
     // Prescription step state
     const [medications, setMedications] = useState<
-        { name: string; dosage: string; timing: string; duration: string }[]
+        { name: string; morning: string; noon: string; night: string; timing: string; duration: string }[]
     >([]);
     const [instructions, setInstructions] = useState("");
 
@@ -211,7 +211,7 @@ export default function NewConsultationPage() {
     const addMedication = () => {
         setMedications([
             ...medications,
-            { name: "", dosage: "", timing: "After food", duration: "" },
+            { name: "", morning: "0", noon: "0", night: "0", timing: "After food", duration: "" },
         ]);
     };
 
@@ -641,42 +641,101 @@ export default function NewConsultationPage() {
                                             />
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <label className="block text-xs font-bold uppercase tracking-wide">
-                                                Dosage
-                                            </label>
-                                            <select
-                                                value={med.dosage}
-                                                onChange={(e) =>
-                                                    updateMedication(i, "dosage", e.target.value)
-                                                }
-                                                className="w-full h-10 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
-                                            >
-                                                <option value="">Select</option>
-                                                <option value="1-0-1">1-0-1</option>
-                                                <option value="1-1-1">1-1-1</option>
-                                                <option value="0-0-1">0-0-1</option>
-                                                <option value="1-0-0">1-0-0</option>
-                                                <option value="SOS">SOS</option>
-                                            </select>
-                                        </div>
+                                        {/* Dosage and Timing Row */}
+                                        <div className="flex items-start gap-8">
+                                            {/* Dosage */}
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase tracking-wide mb-2">
+                                                    Dosage
+                                                </label>
+                                                <div className="flex items-end gap-2">
+                                                    {/* Morning */}
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="flex items-center gap-1 text-xs text-[var(--muted)] mb-1">
+                                                            <Sun className="h-3 w-3" />
+                                                            <span>AM</span>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="2"
+                                                            value={med.morning || "0"}
+                                                            onChange={(e) => {
+                                                                const val = Math.min(2, Math.max(0, parseInt(e.target.value) || 0)).toString();
+                                                                updateMedication(i, "morning", val);
+                                                            }}
+                                                            className="w-12 h-10 text-center border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
+                                                        />
+                                                    </div>
 
-                                        <div className="space-y-2">
-                                            <label className="block text-xs font-bold uppercase tracking-wide">
-                                                Timing
-                                            </label>
-                                            <select
-                                                value={med.timing}
-                                                onChange={(e) =>
-                                                    updateMedication(i, "timing", e.target.value)
-                                                }
-                                                className="w-full h-10 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
-                                            >
-                                                <option value="After food">After food</option>
-                                                <option value="Before food">Before food</option>
-                                                <option value="Empty stomach">Empty stomach</option>
-                                                <option value="Anytime">Anytime</option>
-                                            </select>
+                                                    <span className="text-[var(--muted)] h-10 flex items-center">-</span>
+
+                                                    {/* Noon */}
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="flex items-center gap-1 text-xs text-[var(--muted)] mb-1">
+                                                            <CloudSun className="h-3 w-3" />
+                                                            <span>Noon</span>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="2"
+                                                            value={med.noon || "0"}
+                                                            onChange={(e) => {
+                                                                const val = Math.min(2, Math.max(0, parseInt(e.target.value) || 0)).toString();
+                                                                updateMedication(i, "noon", val);
+                                                            }}
+                                                            className="w-12 h-10 text-center border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
+                                                        />
+                                                    </div>
+
+                                                    <span className="text-[var(--muted)] h-10 flex items-center">-</span>
+
+                                                    {/* Night */}
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="flex items-center gap-1 text-xs text-[var(--muted)] mb-1">
+                                                            <Moon className="h-3 w-3" />
+                                                            <span>PM</span>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="2"
+                                                            value={med.night || "0"}
+                                                            onChange={(e) => {
+                                                                const val = Math.min(2, Math.max(0, parseInt(e.target.value) || 0)).toString();
+                                                                updateMedication(i, "night", val);
+                                                            }}
+                                                            className="w-12 h-10 text-center border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {/* Computed dosage string */}
+                                                <p className="text-xs text-[var(--muted)] mt-2">
+                                                    Dosage: {med.morning || "0"}-{med.noon || "0"}-{med.night || "0"}
+                                                </p>
+                                            </div>
+
+                                            {/* Timing */}
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase tracking-wide mb-2">
+                                                    Timing
+                                                </label>
+                                                {/* Spacer to match AM/Noon/PM row */}
+                                                <div className="text-xs text-transparent mb-1">spacer</div>
+                                                <select
+                                                    value={med.timing}
+                                                    onChange={(e) =>
+                                                        updateMedication(i, "timing", e.target.value)
+                                                    }
+                                                    className="w-[160px] h-10 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
+                                                >
+                                                    <option value="After food">After food</option>
+                                                    <option value="Before food">Before food</option>
+                                                    <option value="Empty stomach">Empty stomach</option>
+                                                    <option value="Anytime">Anytime</option>
+                                                </select>
+                                            </div>
                                         </div>
 
                                         <div className="col-span-2 space-y-2">
