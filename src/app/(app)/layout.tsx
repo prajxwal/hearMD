@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <div className="min-h-screen flex">
+        <div className="h-screen flex overflow-hidden">
             {/* Mobile sidebar backdrop */}
             {sidebarOpen && (
                 <div
@@ -88,7 +88,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* Sidebar */}
             <aside
-                className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[var(--background)] border-r-2 border-[var(--border)] flex flex-col transform transition-transform lg:transform-none ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+                className={`fixed lg:relative inset-y-0 left-0 z-50 w-64 bg-[var(--background)] border-r-2 border-[var(--border)] flex flex-col transform transition-transform lg:transform-none ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
                     }`}
             >
                 {/* Logo */}
@@ -145,7 +145,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
                 <header className="h-16 flex items-center justify-between px-6 border-b-2 border-[var(--border)]">
                     <button
