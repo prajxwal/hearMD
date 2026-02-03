@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/lib/theme-context";
 import "./globals.css";
 
 const robotoMono = Roboto_Mono({
@@ -20,11 +21,14 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body className={`${robotoMono.variable} font-mono antialiased`}>
-                {children}
+                <ThemeProvider>
+                    {children}
+                </ThemeProvider>
                 <Toaster position="top-right" />
             </body>
         </html>
     );
 }
+

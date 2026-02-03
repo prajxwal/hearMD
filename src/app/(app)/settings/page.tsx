@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useTheme } from "@/lib/theme-context";
+import { Moon, Sun } from "lucide-react";
 
 interface DoctorProfile {
     full_name: string;
@@ -15,6 +17,7 @@ interface DoctorProfile {
 
 export default function SettingsPage() {
     const supabase = createClient();
+    const { theme, toggleTheme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [profile, setProfile] = useState<DoctorProfile>({
@@ -104,6 +107,48 @@ export default function SettingsPage() {
                 </p>
             </div>
 
+            {/* Appearance Section */}
+            <section className="space-y-6">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
+                    Appearance
+                </h2>
+
+                <div className="flex items-center justify-between p-4 border-2 border-[var(--border)]">
+                    <div className="flex items-center gap-3">
+                        {theme === "dark" ? (
+                            <Moon className="h-5 w-5" />
+                        ) : (
+                            <Sun className="h-5 w-5" />
+                        )}
+                        <div>
+                            <p className="text-sm font-bold">Dark Mode</p>
+                            <p className="text-xs text-[var(--muted)]">
+                                {theme === "dark" ? "Currently enabled" : "Currently disabled"}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Minimal Toggle Switch */}
+                    <button
+                        onClick={toggleTheme}
+                        className="relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none"
+                        style={{
+                            backgroundColor: theme === "dark" ? "var(--foreground)" : "var(--surface)",
+                            border: "2px solid var(--border)",
+                        }}
+                        aria-label="Toggle dark mode"
+                    >
+                        <span
+                            className="absolute top-1 left-1 w-5 h-5 rounded-full transition-all duration-300 ease-in-out"
+                            style={{
+                                backgroundColor: theme === "dark" ? "var(--background)" : "var(--foreground)",
+                                transform: theme === "dark" ? "translateX(24px)" : "translateX(0)",
+                            }}
+                        />
+                    </button>
+                </div>
+            </section>
+
             {/* Profile Section */}
             <section className="space-y-6">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
@@ -135,7 +180,7 @@ export default function SettingsPage() {
                             type="email"
                             value={profile.email}
                             disabled
-                            className="w-full h-12 px-4 border-2 border-[var(--border)] bg-black/5 text-sm text-[var(--muted)]"
+                            className="w-full h-12 px-4 border-2 border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--muted)]"
                         />
                     </div>
 
@@ -148,7 +193,7 @@ export default function SettingsPage() {
                             type="text"
                             value={profile.registration_number}
                             disabled
-                            className="w-full h-12 px-4 border-2 border-[var(--border)] bg-black/5 text-sm text-[var(--muted)]"
+                            className="w-full h-12 px-4 border-2 border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--muted)]"
                         />
                     </div>
 
@@ -221,3 +266,4 @@ export default function SettingsPage() {
         </div>
     );
 }
+

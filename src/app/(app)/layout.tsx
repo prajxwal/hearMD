@@ -98,7 +98,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 hover:bg-black/5"
+                        className="lg:hidden p-2 hover:opacity-70"
                     >
                         <X className="h-5 w-5" />
                     </button>
@@ -114,8 +114,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 href={item.href}
                                 onClick={() => setSidebarOpen(false)}
                                 className={`flex items-center gap-3 h-12 px-4 text-sm font-bold uppercase tracking-wide border-2 transition-all ${isActive
-                                        ? "bg-[var(--foreground)] text-[var(--background)] border-[var(--foreground)]"
-                                        : "bg-transparent text-[var(--foreground)] border-transparent hover:border-[var(--border)]"
+                                    ? "bg-[var(--foreground)] text-[var(--background)] border-[var(--foreground)]"
+                                    : "bg-transparent text-[var(--foreground)] border-transparent hover:border-[var(--border)]"
                                     }`}
                             >
                                 <item.icon className="h-4 w-4" />
@@ -136,7 +136,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <button
                         onClick={handleLogout}
                         disabled={loggingOut}
-                        className="w-full h-12 flex items-center justify-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:bg-black/5 disabled:opacity-50 transition-colors"
+                        className="w-full h-12 flex items-center justify-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:opacity-80 disabled:opacity-50 transition-opacity"
                     >
                         <LogOut className="h-4 w-4" />
                         {loggingOut ? "Logging out..." : "Logout"}
@@ -150,7 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <header className="h-16 flex items-center justify-between px-6 border-b-2 border-[var(--border)]">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 hover:bg-black/5"
+                        className="lg:hidden p-2 hover:opacity-70"
                     >
                         <Menu className="h-5 w-5" />
                     </button>

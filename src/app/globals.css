@@ -2,11 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode (default) */
 :root {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --muted: #888888;
+  --border: #ffffff;
+  --surface: #141414;
+}
+
+/* Light mode */
+[data-theme="light"] {
   --background: #ffffff;
   --foreground: #000000;
   --muted: #666666;
   --border: #000000;
+  --surface: #f5f5f5;
 }
 
 @layer base {
@@ -28,6 +39,7 @@
     font-family: var(--font-roboto-mono), monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* Focus styles */
