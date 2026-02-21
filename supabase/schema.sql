@@ -30,6 +30,7 @@ CREATE TABLE doctors (
 -- Patients Table
 CREATE TABLE patients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_number TEXT UNIQUE,
     name TEXT NOT NULL,
     age INTEGER NOT NULL CHECK (age >= 0 AND age <= 150),
     gender TEXT NOT NULL CHECK (gender IN ('Male', 'Female', 'Other')),
@@ -111,6 +112,7 @@ CREATE POLICY "Doctors can update own consultations"
 CREATE INDEX idx_doctors_user_id ON doctors(user_id);
 CREATE INDEX idx_patients_created_by ON patients(created_by);
 CREATE INDEX idx_patients_name ON patients(name);
+CREATE INDEX idx_patients_patient_number ON patients(patient_number);
 CREATE INDEX idx_consultations_doctor_id ON consultations(doctor_id);
 CREATE INDEX idx_consultations_patient_id ON consultations(patient_id);
 CREATE INDEX idx_consultations_created_at ON consultations(created_at DESC);

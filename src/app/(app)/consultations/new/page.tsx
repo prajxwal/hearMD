@@ -8,6 +8,7 @@ import { Mic, Square, Search, Plus, CheckCircle, Sun, CloudSun, Moon } from "luc
 
 interface Patient {
     id: string;
+    patient_number: string;
     name: string;
     age: number;
     gender: string;
@@ -64,8 +65,8 @@ export default function NewConsultationPage() {
     const searchPatients = async () => {
         const { data } = await supabase
             .from("patients")
-            .select("id, name, age, gender")
-            .ilike("name", `%${searchQuery}%`)
+            .select("id, patient_number, name, age, gender")
+            .or(`name.ilike.%${searchQuery}%,patient_number.ilike.%${searchQuery}%`)
             .limit(10);
 
         setSearchResults(data || []);
@@ -129,9 +130,24 @@ export default function NewConsultationPage() {
                     return;
                 }
 
+                // Generate next patient number
+                const { data: lastPatient } = await supabase
+                    .from("patients")
+                    .select("patient_number")
+                    .not("patient_number", "is", null)
+                    .order("created_at", { ascending: false })
+                    .limit(1)
+                    .single();
+
+                const nextNum = lastPatient?.patient_number
+                    ? parseInt(lastPatient.patient_number.replace("P-", "")) + 1
+                    : 1;
+                const patientNumber = `P-${nextNum.toString().padStart(4, "0")}`;
+
                 const { data: newPatient, error } = await supabase
                     .from("patients")
                     .insert({
+                        patient_number: patientNumber,
                         name: patientName,
                         age: parseInt(patientAge),
                         gender: patientGender,
@@ -144,6 +160,7 @@ export default function NewConsultationPage() {
                 patientId = newPatient.id;
                 setSelectedPatient({
                     id: newPatient.id,
+                    patient_number: patientNumber,
                     name: patientName,
                     age: parseInt(patientAge),
                     gender: patientGender,
@@ -304,7 +321,7 @@ export default function NewConsultationPage() {
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
                                 <input
                                     type="text"
-                                    placeholder="Search by name..."
+                                    placeholder="Search by name or patient ID..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full h-12 pl-12 pr-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
@@ -315,7 +332,7 @@ export default function NewConsultationPage() {
                                 <div className="p-4 border-2 border-[var(--foreground)] bg-[var(--surface)]">
                                     <p className="font-bold">{selectedPatient.name}</p>
                                     <p className="text-sm text-[var(--muted)]">
-                                        {selectedPatient.age} years • {selectedPatient.gender}
+                                        {selectedPatient.patient_number} • {selectedPatient.age} years • {selectedPatient.gender}
                                     </p>
                                 </div>
                             ) : (
@@ -330,7 +347,7 @@ export default function NewConsultationPage() {
                                                 <div>
                                                     <p className="font-bold">{patient.name}</p>
                                                     <p className="text-xs text-[var(--muted)]">
-                                                        {patient.age} years • {patient.gender}
+                                                        {patient.patient_number} • {patient.age} years • {patient.gender}
                                                     </p>
                                                 </div>
                                                 <Plus className="h-4 w-4" />

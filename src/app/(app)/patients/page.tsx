@@ -8,6 +8,7 @@ import { Plus, Search, X } from "lucide-react";
 
 interface Patient {
     id: string;
+    patient_number: string;
     name: string;
     age: number;
     gender: string;
@@ -82,7 +83,22 @@ export default function PatientsPage() {
 
             if (!doctor) throw new Error("Doctor profile not found");
 
+            // Generate next patient number
+            const { data: lastPatient } = await supabase
+                .from("patients")
+                .select("patient_number")
+                .not("patient_number", "is", null)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .single();
+
+            const nextNum = lastPatient?.patient_number
+                ? parseInt(lastPatient.patient_number.replace("P-", "")) + 1
+                : 1;
+            const patientNumber = `P-${nextNum.toString().padStart(4, "0")}`;
+
             const { error } = await supabase.from("patients").insert({
+                patient_number: patientNumber,
                 name,
                 age: parseInt(age),
                 gender,
@@ -114,6 +130,7 @@ export default function PatientsPage() {
     const filteredPatients = patients.filter(
         (p) =>
             p.name.toLowerCase().includes(search.toLowerCase()) ||
+            (p.patient_number && p.patient_number.toLowerCase().includes(search.toLowerCase())) ||
             (p.phone && p.phone.includes(search))
     );
 
@@ -141,7 +158,7 @@ export default function PatientsPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
                 <input
                     type="text"
-                    placeholder="Search by name or phone..."
+                    placeholder="Search by name, patient ID, or phone..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full h-12 pl-12 pr-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
@@ -167,7 +184,7 @@ export default function PatientsPage() {
                                 <div className="space-y-1">
                                     <p className="font-bold">{patient.name}</p>
                                     <p className="text-xs text-[var(--muted)]">
-                                        {patient.age} years • {patient.gender}
+                                        {patient.patient_number} • {patient.age} years • {patient.gender}
                                         {patient.phone && ` • ${patient.phone}`}
                                     </p>
                                 </div>
