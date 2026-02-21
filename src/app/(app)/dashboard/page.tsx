@@ -17,6 +17,7 @@ interface DashboardStats {
 
 interface RecentPatient {
     id: string;
+    patient_number: string;
     name: string;
     created_at: string;
 }
@@ -72,7 +73,7 @@ export default function DashboardPage() {
                 // Fetch recent patients
                 const { data: patients } = await supabase
                     .from("patients")
-                    .select("id, name, created_at")
+                    .select("id, patient_number, name, created_at")
                     .order("created_at", { ascending: false })
                     .limit(5);
 
@@ -196,7 +197,7 @@ export default function DashboardPage() {
                                     <div>
                                         <p className="font-bold">{patient.name}</p>
                                         <p className="text-xs text-[var(--muted)]">
-                                            Added {formatDate(patient.created_at)}
+                                            {patient.patient_number} • Added {formatDate(patient.created_at)}
                                         </p>
                                     </div>
                                     <span className="text-xs font-bold">→</span>

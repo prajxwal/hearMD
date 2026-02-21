@@ -22,6 +22,7 @@ export default function NewConsultationPage() {
 
     const [step, setStep] = useState<Step>("patient");
     const [loading, setLoading] = useState(false);
+    const [consultationId, setConsultationId] = useState<string | null>(null);
 
     // Patient step state
     const [searchMode, setSearchMode] = useState(false);
@@ -168,16 +169,19 @@ export default function NewConsultationPage() {
             }
 
             // Create consultation
-            const { error: consultationError } = await supabase
+            const { data: consultationData, error: consultationError } = await supabase
                 .from("consultations")
                 .insert({
                     patient_id: patientId,
                     doctor_id: doctor.id,
                     consent_logged: true,
                     status: "recording",
-                });
+                })
+                .select("id")
+                .single();
 
             if (consultationError) throw consultationError;
+            setConsultationId(consultationData.id);
 
             setStep("recording");
             setIsRecording(true);
@@ -248,13 +252,35 @@ export default function NewConsultationPage() {
             return;
         }
 
+        if (!consultationId) {
+            toast.error("Consultation not found. Please start over.");
+            return;
+        }
+
         setLoading(true);
 
         try {
-            // Save consultation data
+            const { error } = await supabase
+                .from("consultations")
+                .update({
+                    transcript,
+                    chief_complaint: notes.chiefComplaint,
+                    history_of_present_illness: notes.historyOfPresentIllness,
+                    past_medical_history: notes.pastMedicalHistory,
+                    examination: notes.examination,
+                    diagnosis: notes.diagnosis,
+                    prescription: medications,
+                    instructions: instructions || null,
+                    status: "completed",
+                })
+                .eq("id", consultationId);
+
+            if (error) throw error;
+
             toast.success("Consultation completed!");
             router.push("/dashboard");
         } catch (error) {
+            console.error("Error saving consultation:", error);
             toast.error("Failed to save consultation");
         } finally {
             setLoading(false);

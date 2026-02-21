@@ -11,6 +11,7 @@ interface Consultation {
     status: string;
     diagnosis: string | null;
     patient: {
+        patient_number: string;
         name: string;
         age: number;
         gender: string;
@@ -36,7 +37,7 @@ export default function ConsultationsPage() {
           created_at,
           status,
           diagnosis,
-          patient:patients(name, age, gender)
+          patient:patients(patient_number, name, age, gender)
         `)
                 .order("created_at", { ascending: false });
 
@@ -81,6 +82,7 @@ export default function ConsultationsPage() {
     const filteredConsultations = consultations.filter(
         (c) =>
             c.patient?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            c.patient?.patient_number?.toLowerCase().includes(search.toLowerCase()) ||
             c.diagnosis?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -108,7 +110,7 @@ export default function ConsultationsPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
                 <input
                     type="text"
-                    placeholder="Search by patient name or diagnosis..."
+                    placeholder="Search by patient name, patient ID, or diagnosis..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full h-12 pl-12 pr-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
@@ -138,7 +140,7 @@ export default function ConsultationsPage() {
                                         {consultation.patient?.name || "Unknown Patient"}
                                     </p>
                                     <p className="text-xs text-[var(--muted)]">
-                                        {consultation.patient?.age} years •{" "}
+                                        {consultation.patient?.patient_number} • {consultation.patient?.age} years •{" "}
                                         {consultation.patient?.gender}
                                     </p>
                                     {consultation.diagnosis && (
