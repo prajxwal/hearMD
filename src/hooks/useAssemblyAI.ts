@@ -19,13 +19,21 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
     const streamRef = useRef<MediaStream | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
 
-    // Track completed turns and current partial
-    const completedTurnsRef = useRef<string[]>([]);
+    // Track completed turns by turn_order (Map so formatted replaces unformatted)
+    const completedTurnsRef = useRef<Map<number, string>>(new Map());
+
+    const buildTranscript = (partial?: string) => {
+        const turns = Array.from(completedTurnsRef.current.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([, text]) => text);
+        if (partial) turns.push("⏳ " + partial);
+        return turns.join("\n\n");
+    };
 
     const startRecording = useCallback(async () => {
         setError(null);
         setTranscript("");
-        completedTurnsRef.current = [];
+        completedTurnsRef.current = new Map();
 
         try {
             // 1. Get temporary token from our API
@@ -76,16 +84,15 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
                     console.log(`Streaming session started: ${msg.id}`);
                 } else if (msg.type === "Turn") {
                     if (!msg.transcript) return;
+                    const turnOrder = msg.turn_order ?? 0;
 
                     if (msg.end_of_turn) {
-                        // Final turn — add to completed turns, clear partial
-                        completedTurnsRef.current.push(msg.transcript);
-                        setTranscript(completedTurnsRef.current.join("\n\n"));
+                        // Set/overwrite this turn (formatted replaces unformatted)
+                        completedTurnsRef.current.set(turnOrder, msg.transcript);
+                        setTranscript(buildTranscript());
                     } else {
-                        // Partial turn — show completed turns + current partial
-                        const completed = completedTurnsRef.current.join("\n\n");
-                        const separator = completed ? "\n\n" : "";
-                        setTranscript(completed + separator + "⏳ " + msg.transcript);
+                        // Partial — show with indicator
+                        setTranscript(buildTranscript(msg.transcript));
                     }
                 } else if (msg.type === "Termination") {
                     console.log(`Session ended: ${msg.audio_duration_seconds}s of audio`);
@@ -124,7 +131,7 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
 
     const stopRecording = useCallback(async () => {
         // Set final transcript (completed turns only, no partials)
-        setTranscript(completedTurnsRef.current.join("\n\n"));
+        setTranscript(buildTranscript());
 
         // Terminate session via v3 protocol
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
