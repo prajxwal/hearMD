@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Mic, Square, Search, Plus, CheckCircle, Sun, CloudSun, Moon } from "lucide-react";
+import { useAssemblyAI } from "@/hooks/useAssemblyAI";
 
 interface Patient {
     id: string;
@@ -18,6 +19,7 @@ type Step = "patient" | "recording" | "notes" | "prescription";
 
 export default function NewConsultationPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = createClient();
 
     const [step, setStep] = useState<Step>("patient");
@@ -32,9 +34,17 @@ export default function NewConsultationPage() {
     const [patientName, setPatientName] = useState("");
     const [patientAge, setPatientAge] = useState("");
     const [patientGender, setPatientGender] = useState("");
+    const [patientPhone, setPatientPhone] = useState("");
     const [consent, setConsent] = useState(false);
 
-    // Recording step state
+    // Recording step state (AssemblyAI hook)
+    const {
+        transcript: liveTranscript,
+        isConnected,
+        error: transcriptionError,
+        startRecording: startTranscription,
+        stopRecording: stopTranscription,
+    } = useAssemblyAI();
     const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState("");
     const [duration, setDuration] = useState(0);
@@ -53,6 +63,26 @@ export default function NewConsultationPage() {
         { name: string; morning: string; noon: string; night: string; timing: string; duration: string }[]
     >([]);
     const [instructions, setInstructions] = useState("");
+
+    // Auto-select patient if patientId is in URL
+    useEffect(() => {
+        const patientId = searchParams.get("patientId");
+        if (patientId) {
+            async function fetchPatient() {
+                const { data } = await supabase
+                    .from("patients")
+                    .select("id, patient_number, name, age, gender")
+                    .eq("id", patientId)
+                    .single();
+
+                if (data) {
+                    setSelectedPatient(data);
+                    setSearchMode(true);
+                }
+            }
+            fetchPatient();
+        }
+    }, [searchParams, supabase]);
 
     // Search patients
     useEffect(() => {
@@ -152,6 +182,7 @@ export default function NewConsultationPage() {
                         name: patientName,
                         age: parseInt(patientAge),
                         gender: patientGender,
+                        phone: patientPhone || null,
                         created_by: doctor.id,
                     })
                     .select()
@@ -185,7 +216,16 @@ export default function NewConsultationPage() {
 
             setStep("recording");
             setIsRecording(true);
-            toast.success("Recording started");
+
+            // Start real-time transcription
+            try {
+                await startTranscription();
+                toast.success("Recording started — speak into your microphone");
+            } catch {
+                toast.error("Microphone access failed. Please allow mic permission and try again.");
+                setIsRecording(false);
+                return;
+            }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Failed to start";
             toast.error(message);
@@ -194,30 +234,23 @@ export default function NewConsultationPage() {
         }
     };
 
-    const handleStopRecording = () => {
+    const handleStopRecording = async () => {
         setIsRecording(false);
-        // In real implementation, this would process audio and get transcript
-        // For now, we'll simulate with placeholder
-        setTranscript(
-            "[Doctor] Good morning, how are you feeling today?\n\n" +
-            "[Patient] I have fever since yesterday with headache.\n\n" +
-            "[Doctor] When did it start exactly?\n\n" +
-            "[Patient] Yesterday evening, around 6 PM."
-        );
+        await stopTranscription();
+
+        // Use the real transcript from AssemblyAI
+        setTranscript(liveTranscript);
+
         setStep("notes");
-        // Simulate AI extraction
+        // Notes start empty — doctor fills them after reading transcript
         setNotes({
-            chiefComplaint: "Fever with headache since yesterday",
-            historyOfPresentIllness: [
-                "Fever started yesterday evening around 6 PM",
-                "Associated with headache",
-                "No cough or cold",
-            ],
+            chiefComplaint: "",
+            historyOfPresentIllness: [],
             pastMedicalHistory: [],
-            examination: ["Temperature: 101°F", "Throat: Mildly inflamed"],
+            examination: [],
             diagnosis: "",
         });
-        toast.success("Recording stopped. Notes generated.");
+        toast.success("Recording stopped. Review transcript and fill in notes.");
     };
 
     const handleSaveNotes = () => {
@@ -429,6 +462,19 @@ export default function NewConsultationPage() {
                                     </select>
                                 </div>
                             </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold uppercase tracking-wide">
+                                    Phone
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={patientPhone}
+                                    onChange={(e) => setPatientPhone(e.target.value)}
+                                    placeholder="Phone number (optional)"
+                                    className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                                />
+                            </div>
                         </div>
                     )}
 
@@ -473,11 +519,16 @@ export default function NewConsultationPage() {
                         </div>
                     </div>
 
-                    {/* Transcript Area */}
-                    <div className="h-80 p-4 border-2 border-[var(--border)] overflow-auto font-mono text-sm">
-                        {transcript || (
+                    {/* Live Transcript Area */}
+                    <div className="h-80 p-4 border-2 border-[var(--border)] overflow-auto font-mono text-sm whitespace-pre-wrap">
+                        {transcriptionError && (
+                            <p className="text-red-400 mb-2">⚠ {transcriptionError}</p>
+                        )}
+                        {liveTranscript || (
                             <p className="text-[var(--muted)]">
-                                Live transcript will appear here...
+                                {isConnected
+                                    ? "Listening... start speaking."
+                                    : "Connecting to transcription service..."}
                             </p>
                         )}
                     </div>

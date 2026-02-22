@@ -138,7 +138,7 @@ export default function PatientDetailPage() {
                             {patient.patient_number} • {patient.age} years • {patient.gender}
                         </p>
                     </div>
-                    <Link href="/consultations/new">
+                    <Link href={`/consultations/new?patientId=${patient.id}`}>
                         <button className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity">
                             <Plus className="h-4 w-4" />
                             New Consultation
