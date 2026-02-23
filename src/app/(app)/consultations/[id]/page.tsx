@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, User, Sun, CloudSun, Moon } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 interface ConsultationDetail {
     id: string;
@@ -87,15 +88,7 @@ export default function ConsultationDetailPage() {
         fetchData();
     }, [params.id, supabase]);
 
-    const formatDateTime = (date: string) => {
-        return new Date(date).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
+
 
     const getStatusStyle = (status: string) => {
         switch (status) {

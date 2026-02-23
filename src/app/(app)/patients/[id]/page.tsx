@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, FileText, Calendar } from "lucide-react";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 interface Patient {
     id: string;
@@ -64,23 +65,7 @@ export default function PatientDetailPage() {
         fetchData();
     }, [params.id, supabase]);
 
-    const formatDate = (date: string) => {
-        return new Date(date).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        });
-    };
 
-    const formatDateTime = (date: string) => {
-        return new Date(date).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
 
     const getStatusStyle = (status: string) => {
         switch (status) {

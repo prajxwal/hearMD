@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
+    // Authenticate: only logged-in users can request a streaming token
+    const supabase = await createClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     const apiKey = process.env.ASSEMBLYAI_API_KEY;
 
     if (!apiKey) {
@@ -42,4 +56,3 @@ export async function GET() {
         );
     }
 }
-

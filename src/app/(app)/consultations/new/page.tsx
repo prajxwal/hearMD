@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Mic, Square, Search, Plus, CheckCircle, Sun, CloudSun, Moon } from "lucide-react";
 import { useAssemblyAI } from "@/hooks/useAssemblyAI";
+import { generatePatientNumber } from "@/lib/utils";
 
 interface Patient {
     id: string;
@@ -114,6 +115,17 @@ export default function NewConsultationPage() {
         return () => clearInterval(interval);
     }, [isRecording]);
 
+    // Warn user before leaving during an active recording
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isRecording) {
+                e.preventDefault();
+            }
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [isRecording]);
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -161,19 +173,7 @@ export default function NewConsultationPage() {
                     return;
                 }
 
-                // Generate next patient number
-                const { data: lastPatient } = await supabase
-                    .from("patients")
-                    .select("patient_number")
-                    .not("patient_number", "is", null)
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .single();
-
-                const nextNum = lastPatient?.patient_number
-                    ? parseInt(lastPatient.patient_number.replace("P-", "")) + 1
-                    : 1;
-                const patientNumber = `P-${nextNum.toString().padStart(4, "0")}`;
+                const patientNumber = await generatePatientNumber(supabase);
 
                 const { data: newPatient, error } = await supabase
                     .from("patients")
@@ -601,6 +601,54 @@ export default function NewConsultationPage() {
                                         ...notes,
                                         historyOfPresentIllness: [
                                             ...notes.historyOfPresentIllness,
+                                            "",
+                                        ],
+                                    })
+                                }
+                                className="text-xs font-bold uppercase tracking-wide hover:underline"
+                            >
+                                + Add item
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Past Medical History */}
+                    <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wide">
+                            Past Medical History
+                        </label>
+                        <div className="space-y-2">
+                            {notes.pastMedicalHistory.map((item, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                            const updated = [...notes.pastMedicalHistory];
+                                            updated[i] = e.target.value;
+                                            setNotes({ ...notes, pastMedicalHistory: updated });
+                                        }}
+                                        className="flex-1 h-10 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const updated = notes.pastMedicalHistory.filter(
+                                                (_, idx) => idx !== i
+                                            );
+                                            setNotes({ ...notes, pastMedicalHistory: updated });
+                                        }}
+                                        className="px-3 border-2 border-[var(--border)] hover:opacity-70"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() =>
+                                    setNotes({
+                                        ...notes,
+                                        pastMedicalHistory: [
+                                            ...notes.pastMedicalHistory,
                                             "",
                                         ],
                                     })

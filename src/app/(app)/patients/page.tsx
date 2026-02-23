@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Plus, Search, X } from "lucide-react";
+import { generatePatientNumber } from "@/lib/utils";
 
 interface Patient {
     id: string;
@@ -83,19 +84,7 @@ export default function PatientsPage() {
 
             if (!doctor) throw new Error("Doctor profile not found");
 
-            // Generate next patient number
-            const { data: lastPatient } = await supabase
-                .from("patients")
-                .select("patient_number")
-                .not("patient_number", "is", null)
-                .order("created_at", { ascending: false })
-                .limit(1)
-                .single();
-
-            const nextNum = lastPatient?.patient_number
-                ? parseInt(lastPatient.patient_number.replace("P-", "")) + 1
-                : 1;
-            const patientNumber = `P-${nextNum.toString().padStart(4, "0")}`;
+            const patientNumber = await generatePatientNumber(supabase);
 
             const { error } = await supabase.from("patients").insert({
                 patient_number: patientNumber,

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { formatDateTime } from "@/lib/utils";
 
 interface Consultation {
     id: string;
@@ -57,15 +59,28 @@ export default function ConsultationsPage() {
         }
     };
 
-    const formatDate = (date: string) => {
-        const d = new Date(date);
-        return d.toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+    const formatDate = formatDateTime;
+
+    const deleteConsultation = async (id: string, e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent navigation from Link
+        e.stopPropagation();
+
+        if (!confirm("Delete this abandoned consultation?")) return;
+
+        try {
+            const { error } = await supabase
+                .from("consultations")
+                .delete()
+                .eq("id", id);
+
+            if (error) throw error;
+
+            setConsultations((prev) => prev.filter((c) => c.id !== id));
+            toast.success("Consultation deleted");
+        } catch (err) {
+            console.error("Delete error:", err);
+            toast.error("Failed to delete consultation");
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -160,6 +175,15 @@ export default function ConsultationsPage() {
                                             {formatDate(consultation.created_at)}
                                         </p>
                                     </div>
+                                    {(consultation.status === "recording" || consultation.status === "draft") && (
+                                        <button
+                                            onClick={(e) => deleteConsultation(consultation.id, e)}
+                                            className="p-2 hover:opacity-70 text-[var(--muted)] hover:text-red-500 transition-colors"
+                                            title="Delete abandoned consultation"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
                                     <span className="text-xs font-bold">→</span>
                                 </div>
                             </Link>

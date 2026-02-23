@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Users, CalendarDays, FileText, Clock } from "lucide-react";
+import { formatRelativeDate } from "@/lib/utils";
 
 interface DoctorProfile {
     full_name: string;
@@ -88,17 +89,7 @@ export default function DashboardPage() {
         fetchData();
     }, [supabase]);
 
-    const formatDate = (date: string) => {
-        const d = new Date(date);
-        const now = new Date();
-        const diffMs = now.getTime() - d.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) return "Today";
-        if (diffDays === 1) return "Yesterday";
-        if (diffDays < 7) return `${diffDays} days ago`;
-        return d.toLocaleDateString();
-    };
+    const formatDate = formatRelativeDate;
 
     return (
         <div className="space-y-12">

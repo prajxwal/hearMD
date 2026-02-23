@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 interface UseAssemblyAIReturn {
     transcript: string;
@@ -18,6 +18,7 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
     const wsRef = useRef<WebSocket | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
+    const isStartingRef = useRef(false);
 
     // Track completed turns by turn_order (Map so formatted replaces unformatted)
     const completedTurnsRef = useRef<Map<number, string>>(new Map());
@@ -30,7 +31,55 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
         return turns.join("\n\n");
     };
 
+    /**
+     * Clean up all resources (WebSocket, mic stream, AudioContext).
+     * Safe to call multiple times — each ref is nulled after cleanup.
+     */
+    const cleanupResources = useCallback(async () => {
+        // Close WebSocket
+        if (wsRef.current) {
+            if (wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.send(JSON.stringify({ type: "Terminate" }));
+                wsRef.current.close();
+            }
+            wsRef.current = null;
+        }
+
+        // Stop mic stream
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+        }
+
+        // Close audio context
+        if (audioContextRef.current) {
+            try {
+                await audioContextRef.current.close();
+            } catch {
+                // Already closed — ignore
+            }
+            audioContextRef.current = null;
+        }
+
+        setIsConnected(false);
+        isStartingRef.current = false;
+    }, []);
+
+    // Cleanup on unmount — prevents orphaned WebSocket/mic/AudioContext
+    useEffect(() => {
+        return () => {
+            cleanupResources();
+        };
+    }, [cleanupResources]);
+
     const startRecording = useCallback(async () => {
+        // Guard against double-start
+        if (isStartingRef.current || isConnected) {
+            console.warn("Recording already in progress or starting");
+            return;
+        }
+        isStartingRef.current = true;
+
         setError(null);
         setTranscript("");
         completedTurnsRef.current = new Map();
@@ -102,10 +151,12 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
             ws.onerror = (e) => {
                 console.error("WebSocket error:", e);
                 setError("Connection error");
+                cleanupResources();
             };
 
             ws.onclose = (e) => {
                 setIsConnected(false);
+                isStartingRef.current = false;
                 if (e.code !== 1000) {
                     console.warn("WebSocket closed:", e.code, e.reason);
                 }
@@ -125,35 +176,16 @@ export function useAssemblyAI(): UseAssemblyAIReturn {
             const message = err instanceof Error ? err.message : "Recording failed";
             setError(message);
             console.error("Start recording error:", err);
+            await cleanupResources();
             throw err;
         }
-    }, []);
+    }, [isConnected, cleanupResources]);
 
     const stopRecording = useCallback(async () => {
         // Set final transcript (completed turns only, no partials)
         setTranscript(buildTranscript());
-
-        // Terminate session via v3 protocol
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: "Terminate" }));
-            wsRef.current.close();
-            wsRef.current = null;
-        }
-
-        // Stop mic stream
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => track.stop());
-            streamRef.current = null;
-        }
-
-        // Close audio context
-        if (audioContextRef.current) {
-            await audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-
-        setIsConnected(false);
-    }, []);
+        await cleanupResources();
+    }, [cleanupResources]);
 
     return { transcript, isConnected, error, startRecording, stopRecording };
 }
