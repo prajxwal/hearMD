@@ -108,6 +108,10 @@ CREATE POLICY "Doctors can update own consultations"
     ON consultations FOR UPDATE
     USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()));
 
+CREATE POLICY "Doctors can delete own consultations"
+    ON consultations FOR DELETE
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()));
+
 -- Indexes for performance
 CREATE INDEX idx_doctors_user_id ON doctors(user_id);
 CREATE INDEX idx_patients_created_by ON patients(created_by);
