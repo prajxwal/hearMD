@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Plus, FileText, Calendar } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Calendar, Pencil, X, Check } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Patient {
     id: string;
@@ -36,6 +37,11 @@ export default function PatientDetailPage() {
     const [consultations, setConsultations] = useState<Consultation[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Edit mode
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ name: "", age: 0, gender: "", phone: "" });
+    const [saving, setSaving] = useState(false);
+
     useEffect(() => {
         async function fetchData() {
             try {
@@ -65,7 +71,63 @@ export default function PatientDetailPage() {
         fetchData();
     }, [params.id, supabase]);
 
+    const startEditing = () => {
+        if (!patient) return;
+        setEditForm({
+            name: patient.name,
+            age: patient.age,
+            gender: patient.gender,
+            phone: patient.phone || "",
+        });
+        setIsEditing(true);
+    };
 
+    const cancelEditing = () => {
+        setIsEditing(false);
+    };
+
+    const savePatient = async () => {
+        if (!patient) return;
+        if (!editForm.name.trim()) {
+            toast.error("Name is required");
+            return;
+        }
+        if (editForm.age < 0 || editForm.age > 150) {
+            toast.error("Age must be between 0 and 150");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from("patients")
+                .update({
+                    name: editForm.name.trim(),
+                    age: editForm.age,
+                    gender: editForm.gender,
+                    phone: editForm.phone.trim() || null,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", patient.id);
+
+            if (error) throw error;
+
+            setPatient({
+                ...patient,
+                name: editForm.name.trim(),
+                age: editForm.age,
+                gender: editForm.gender,
+                phone: editForm.phone.trim() || null,
+            });
+            setIsEditing(false);
+            toast.success("Patient updated");
+        } catch (err) {
+            console.error("Update error:", err);
+            toast.error("Failed to update patient");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const getStatusStyle = (status: string) => {
         switch (status) {
@@ -118,37 +180,117 @@ export default function PatientDetailPage() {
             <div className="border-2 border-[var(--border)] p-6 space-y-4">
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-2xl font-bold tracking-tight">{patient.name}</h1>
+                        {isEditing ? (
+                            <input
+                                type="text"
+                                value={editForm.name}
+                                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                className="text-2xl font-bold tracking-tight bg-transparent border-b-2 border-[var(--border)] focus:outline-none w-full"
+                            />
+                        ) : (
+                            <h1 className="text-2xl font-bold tracking-tight">{patient.name}</h1>
+                        )}
                         <p className="text-sm text-[var(--muted)]">
                             {patient.patient_number} • {patient.age} years • {patient.gender}
                         </p>
                     </div>
-                    <Link href={`/consultations/new?patientId=${patient.id}`}>
-                        <button className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity">
-                            <Plus className="h-4 w-4" />
-                            New Consultation
-                        </button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        {isEditing ? (
+                            <>
+                                <button
+                                    onClick={cancelEditing}
+                                    className="h-10 px-4 flex items-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:opacity-70 transition-opacity"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={savePatient}
+                                    disabled={saving}
+                                    className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity disabled:opacity-50"
+                                >
+                                    <Check className="h-4 w-4" />
+                                    {saving ? "Saving..." : "Save"}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={startEditing}
+                                    className="h-10 px-4 flex items-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:opacity-70 transition-opacity"
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                    Edit
+                                </button>
+                                <Link href={`/consultations/new?patientId=${patient.id}`}>
+                                    <button className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity">
+                                        <Plus className="h-4 w-4" />
+                                        New Consultation
+                                    </button>
+                                </Link>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t-2 border-[var(--border)]">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Patient ID</p>
-                        <p className="text-sm font-bold mt-1">{patient.patient_number}</p>
+                {isEditing ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t-2 border-[var(--border)]">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Patient ID</p>
+                            <p className="text-sm font-bold mt-1">{patient.patient_number}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Age</label>
+                            <input
+                                type="number"
+                                value={editForm.age}
+                                onChange={(e) => setEditForm({ ...editForm, age: parseInt(e.target.value) || 0 })}
+                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Gender</label>
+                            <select
+                                value={editForm.gender}
+                                onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                            >
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Phone</label>
+                            <input
+                                type="text"
+                                value={editForm.phone}
+                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                placeholder="Phone number"
+                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Age</p>
-                        <p className="text-sm font-bold mt-1">{patient.age} years</p>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t-2 border-[var(--border)]">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Patient ID</p>
+                            <p className="text-sm font-bold mt-1">{patient.patient_number}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Age</p>
+                            <p className="text-sm font-bold mt-1">{patient.age} years</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Gender</p>
+                            <p className="text-sm font-bold mt-1">{patient.gender}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Phone</p>
+                            <p className="text-sm font-bold mt-1">{patient.phone || "—"}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Gender</p>
-                        <p className="text-sm font-bold mt-1">{patient.gender}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Phone</p>
-                        <p className="text-sm font-bold mt-1">{patient.phone || "—"}</p>
-                    </div>
-                </div>
+                )}
 
                 <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
                     <Calendar className="h-3 w-3" />
