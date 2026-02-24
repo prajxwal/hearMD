@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useTheme } from "@/lib/theme-context";
 import { Moon, Sun } from "lucide-react";
+import { validateDoctorProfile } from "@/lib/validation";
 
 interface DoctorProfile {
     full_name: string;
@@ -62,6 +63,12 @@ export default function SettingsPage() {
     };
 
     const handleSave = async () => {
+        const validation = validateDoctorProfile(profile);
+        if (!validation.valid) {
+            validation.errors.forEach((e) => toast.error(e));
+            return;
+        }
+
         setSaving(true);
 
         try {

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, User, Sun, CloudSun, Moon, Pencil, X, Check, Plus } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { validateConsultationNotes } from "@/lib/validation";
 
 interface Prescription {
     name: string;
@@ -134,6 +135,12 @@ export default function ConsultationDetailPage() {
 
     const saveConsultation = async () => {
         if (!consultation || !editForm) return;
+
+        const validation = validateConsultationNotes(editForm);
+        if (!validation.valid) {
+            validation.errors.forEach((e) => toast.error(e));
+            return;
+        }
 
         setSaving(true);
         try {

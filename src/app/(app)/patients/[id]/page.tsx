@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, FileText, Calendar, Pencil, X, Check } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { validatePatient } from "@/lib/validation";
 
 interface Patient {
     id: string;
@@ -88,12 +89,9 @@ export default function PatientDetailPage() {
 
     const savePatient = async () => {
         if (!patient) return;
-        if (!editForm.name.trim()) {
-            toast.error("Name is required");
-            return;
-        }
-        if (editForm.age < 0 || editForm.age > 150) {
-            toast.error("Age must be between 0 and 150");
+        const validation = validatePatient(editForm);
+        if (!validation.valid) {
+            validation.errors.forEach((e) => toast.error(e));
             return;
         }
 
