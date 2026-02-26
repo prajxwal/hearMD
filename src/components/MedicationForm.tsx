@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sun, CloudSun, Moon, Plus } from "lucide-react";
+import { MedicationAutocomplete } from "@/components/MedicationAutocomplete";
 import type { Prescription } from "@/lib/types";
 
 interface MedicationFormProps {
@@ -53,12 +54,9 @@ export function MedicationForm({ medications, onChange }: MedicationFormProps) {
                         </button>
                     </div>
 
-                    <input
-                        type="text"
+                    <MedicationAutocomplete
                         value={med.name}
-                        onChange={(e) => updateMedication(i, "name", e.target.value)}
-                        placeholder="Medication name"
-                        className="w-full h-10 px-4 border-2 border-[var(--border)] bg-transparent text-sm font-bold focus:outline-none"
+                        onChange={(val) => updateMedication(i, "name", val)}
                     />
 
                     <div className="grid grid-cols-3 gap-2">
