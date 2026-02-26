@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
 import { generatePatientNumber } from "@/lib/utils";
-import { PageHeader, EmptyState, LoadingState, SearchBar, Button } from "@/components/ui";
+import { PageHeader, EmptyState, SearchBar, Button, ListSkeleton } from "@/components/ui";
 import { Input } from "@/components/ui";
 import type { Patient } from "@/lib/types";
 
@@ -116,6 +116,8 @@ export default function PatientsPage() {
             (p.phone && p.phone.includes(search))
     );
 
+    if (loading) return <ListSkeleton />;
+
     return (
         <div className="space-y-8">
             <PageHeader
@@ -139,9 +141,7 @@ export default function PatientsPage() {
 
             {/* Patient List */}
             <div className="border-2 border-[var(--border)]">
-                {loading ? (
-                    <LoadingState />
-                ) : filteredPatients.length === 0 ? (
+                {filteredPatients.length === 0 ? (
                     <EmptyState
                         message={search ? "No patients match your search" : "No patients yet"}
                     />

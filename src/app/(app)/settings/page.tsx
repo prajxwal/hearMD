@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useTheme } from "@/lib/theme-context";
 import { Moon, Sun } from "lucide-react";
 import { validateDoctorProfile } from "@/lib/validation";
-import { Input, Textarea, PageHeader, SectionLabel, Button } from "@/components/ui";
+import { Input, Textarea, PageHeader, SectionLabel, Button, SettingsSkeleton } from "@/components/ui";
 import type { DoctorProfile } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -91,13 +91,7 @@ export default function SettingsPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-[var(--muted)]">Loading...</p>
-            </div>
-        );
-    }
+    if (loading) return <SettingsSkeleton />;
 
     return (
         <div className="max-w-2xl space-y-12">

@@ -8,7 +8,7 @@ import { ArrowLeft, Plus, FileText, Calendar, Pencil, X, Check } from "lucide-re
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { validatePatient } from "@/lib/validation";
-import { StatusBadge, Button, Card, LoadingState, EmptyState } from "@/components/ui";
+import { StatusBadge, Button, Card, EmptyState, PatientDetailSkeleton } from "@/components/ui";
 import type { Patient, PatientConsultation } from "@/lib/types";
 
 export default function PatientDetailPage() {
@@ -112,11 +112,7 @@ export default function PatientDetailPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <LoadingState />
-            </div>
-        );
+        return <PatientDetailSkeleton />;
     }
 
     if (!patient) {

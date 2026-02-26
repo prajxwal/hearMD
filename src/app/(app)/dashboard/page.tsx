@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Plus, Users, CalendarDays, FileText, Clock } from "lucide-react";
 import { formatRelativeDate } from "@/lib/utils";
 import { useDoctor } from "@/lib/doctor-context";
-import { PageHeader, SectionLabel, EmptyState, LoadingState } from "@/components/ui";
+import { PageHeader, SectionLabel, EmptyState, DashboardSkeleton } from "@/components/ui";
 import { Button } from "@/components/ui";
 import type { DashboardStats, RecentPatient } from "@/lib/types";
 
@@ -63,12 +63,14 @@ export default function DashboardPage() {
         fetchData();
     }, []);
 
+    if (loading) return <DashboardSkeleton />;
+
     return (
         <div className="space-y-12">
             <PageHeader
                 title="Dashboard"
                 subtitle={
-                    loading || doctorLoading
+                    doctorLoading
                         ? "Loading..."
                         : `Welcome back, ${doctor?.full_name || "Doctor"}`
                 }
@@ -95,30 +97,10 @@ export default function DashboardPage() {
             <section className="space-y-4">
                 <SectionLabel>Statistics</SectionLabel>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard
-                        title="Today"
-                        value={loading ? "--" : stats.todaysConsultations.toString()}
-                        label="Consultations"
-                        icon={CalendarDays}
-                    />
-                    <StatCard
-                        title="Total"
-                        value={loading ? "--" : stats.totalPatients.toString()}
-                        label="Patients"
-                        icon={Users}
-                    />
-                    <StatCard
-                        title="Total"
-                        value={loading ? "--" : stats.totalConsultations.toString()}
-                        label="Consultations"
-                        icon={FileText}
-                    />
-                    <StatCard
-                        title="Avg Time"
-                        value="--"
-                        label="Per Patient"
-                        icon={Clock}
-                    />
+                    <StatCard title="Today" value={stats.todaysConsultations.toString()} label="Consultations" icon={CalendarDays} />
+                    <StatCard title="Total" value={stats.totalPatients.toString()} label="Patients" icon={Users} />
+                    <StatCard title="Total" value={stats.totalConsultations.toString()} label="Consultations" icon={FileText} />
+                    <StatCard title="Avg Time" value="--" label="Per Patient" icon={Clock} />
                 </div>
             </section>
 
@@ -126,17 +108,12 @@ export default function DashboardPage() {
             <section className="space-y-4">
                 <div className="flex items-center justify-between">
                     <SectionLabel>Recent Patients</SectionLabel>
-                    <Link
-                        href="/patients"
-                        className="text-xs font-bold uppercase tracking-wide hover:underline"
-                    >
+                    <Link href="/patients" className="text-xs font-bold uppercase tracking-wide hover:underline">
                         View All →
                     </Link>
                 </div>
                 <div className="border-2 border-[var(--border)]">
-                    {loading ? (
-                        <LoadingState />
-                    ) : recentPatients.length === 0 ? (
+                    {recentPatients.length === 0 ? (
                         <EmptyState message="No patients yet. Start your first consultation!" />
                     ) : (
                         <div className="divide-y-2 divide-[var(--border)]">
@@ -164,24 +141,16 @@ export default function DashboardPage() {
 }
 
 function StatCard({
-    title,
-    value,
-    label,
-    icon: Icon,
+    title, value, label, icon: Icon,
 }: {
-    title: string;
-    value: string;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
+    title: string; value: string; label: string; icon: React.ComponentType<{ className?: string }>;
 }) {
     return (
         <div className="p-6 border-2 border-[var(--border)] space-y-4">
             <Icon className="h-5 w-5 text-[var(--muted)]" />
             <div>
                 <p className="text-3xl font-bold tracking-tight">{value}</p>
-                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">
-                    {title} {label}
-                </p>
+                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">{title} {label}</p>
             </div>
         </div>
     );

@@ -8,7 +8,7 @@ import { ArrowLeft, User, Pencil, X, Check, Printer } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { validateConsultationNotes } from "@/lib/validation";
-import { StatusBadge, Button, Card, LoadingState, EmptyState } from "@/components/ui";
+import { StatusBadge, Button, Card, EmptyState, ConsultationDetailSkeleton } from "@/components/ui";
 import { EditableList } from "@/components/EditableList";
 import { MedicationForm } from "@/components/MedicationForm";
 import { Sun, CloudSun, Moon } from "lucide-react";
@@ -173,11 +173,7 @@ export default function ConsultationDetailPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <LoadingState />
-            </div>
-        );
+        return <ConsultationDetailSkeleton />;
     }
 
     if (!consultation) {

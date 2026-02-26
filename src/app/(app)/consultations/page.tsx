@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateTime } from "@/lib/utils";
-import { PageHeader, EmptyState, LoadingState, SearchBar, StatusBadge, Button } from "@/components/ui";
+import { PageHeader, EmptyState, SearchBar, StatusBadge, Button, ListSkeleton } from "@/components/ui";
 import type { Consultation } from "@/lib/types";
 
 export default function ConsultationsPage() {
@@ -78,6 +78,8 @@ export default function ConsultationsPage() {
             c.diagnosis?.toLowerCase().includes(search.toLowerCase())
     );
 
+    if (loading) return <ListSkeleton />;
+
     return (
         <div className="space-y-8">
             <PageHeader
@@ -100,9 +102,7 @@ export default function ConsultationsPage() {
 
             {/* Consultations List */}
             <div className="border-2 border-[var(--border)]">
-                {loading ? (
-                    <LoadingState />
-                ) : filteredConsultations.length === 0 ? (
+                {filteredConsultations.length === 0 ? (
                     <EmptyState
                         message={search ? "No consultations match your search" : "No consultations yet"}
                     />
