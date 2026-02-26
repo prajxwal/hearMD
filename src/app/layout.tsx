@@ -25,10 +25,9 @@ export default function RootLayout({
             <body className={`${robotoMono.variable} font-mono antialiased`}>
                 <ThemeProvider>
                     {children}
+                    <Toaster position="top-right" />
                 </ThemeProvider>
-                <Toaster position="top-right" />
             </body>
         </html>
     );
 }
-

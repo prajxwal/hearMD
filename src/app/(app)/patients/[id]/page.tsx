@@ -8,34 +8,15 @@ import { ArrowLeft, Plus, FileText, Calendar, Pencil, X, Check } from "lucide-re
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { validatePatient } from "@/lib/validation";
-
-interface Patient {
-    id: string;
-    patient_number: string;
-    name: string;
-    age: number;
-    gender: string;
-    phone: string | null;
-    created_at: string;
-}
-
-interface Consultation {
-    id: string;
-    created_at: string;
-    status: string;
-    chief_complaint: string | null;
-    diagnosis: string | null;
-    prescription: { name: string }[] | null;
-    instructions: string | null;
-}
+import { StatusBadge, Button, Card, LoadingState, EmptyState } from "@/components/ui";
+import type { Patient, PatientConsultation } from "@/lib/types";
 
 export default function PatientDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const supabase = createClient();
 
     const [patient, setPatient] = useState<Patient | null>(null);
-    const [consultations, setConsultations] = useState<Consultation[]>([]);
+    const [consultations, setConsultations] = useState<PatientConsultation[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Edit mode
@@ -44,6 +25,8 @@ export default function PatientDetailPage() {
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
+        const supabase = createClient();
+
         async function fetchData() {
             try {
                 const { data: patientData, error: patientError } = await supabase
@@ -70,7 +53,7 @@ export default function PatientDetailPage() {
         }
 
         fetchData();
-    }, [params.id, supabase]);
+    }, [params.id]);
 
     const startEditing = () => {
         if (!patient) return;
@@ -97,6 +80,7 @@ export default function PatientDetailPage() {
 
         setSaving(true);
         try {
+            const supabase = createClient();
             const { error } = await supabase
                 .from("patients")
                 .update({
@@ -127,21 +111,10 @@ export default function PatientDetailPage() {
         }
     };
 
-    const getStatusStyle = (status: string) => {
-        switch (status) {
-            case "completed":
-                return "bg-[var(--foreground)] text-[var(--background)]";
-            case "recording":
-                return "bg-[var(--foreground)]/20";
-            default:
-                return "border-2 border-[var(--border)]";
-        }
-    };
-
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <p className="text-[var(--muted)]">Loading...</p>
+                <LoadingState />
             </div>
         );
     }
@@ -156,9 +129,9 @@ export default function PatientDetailPage() {
                     <ArrowLeft className="h-4 w-4" />
                     Back to Patients
                 </button>
-                <div className="p-6 text-center border-2 border-[var(--border)]">
-                    <p className="text-[var(--muted)]">Patient not found</p>
-                </div>
+                <Card>
+                    <EmptyState message="Patient not found" />
+                </Card>
             </div>
         );
     }
@@ -175,7 +148,7 @@ export default function PatientDetailPage() {
             </button>
 
             {/* Patient Header */}
-            <div className="border-2 border-[var(--border)] p-6 space-y-4">
+            <Card className="space-y-4">
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">
                         {isEditing ? (
@@ -195,36 +168,22 @@ export default function PatientDetailPage() {
                     <div className="flex items-center gap-2">
                         {isEditing ? (
                             <>
-                                <button
-                                    onClick={cancelEditing}
-                                    className="h-10 px-4 flex items-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:opacity-70 transition-opacity"
-                                >
-                                    <X className="h-4 w-4" />
+                                <Button variant="secondary" onClick={cancelEditing} icon={<X className="h-4 w-4" />}>
                                     Cancel
-                                </button>
-                                <button
-                                    onClick={savePatient}
-                                    disabled={saving}
-                                    className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    <Check className="h-4 w-4" />
-                                    {saving ? "Saving..." : "Save"}
-                                </button>
+                                </Button>
+                                <Button onClick={savePatient} loading={saving} icon={<Check className="h-4 w-4" />}>
+                                    Save
+                                </Button>
                             </>
                         ) : (
                             <>
-                                <button
-                                    onClick={startEditing}
-                                    className="h-10 px-4 flex items-center gap-2 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:opacity-70 transition-opacity"
-                                >
-                                    <Pencil className="h-4 w-4" />
+                                <Button variant="secondary" onClick={startEditing} icon={<Pencil className="h-4 w-4" />}>
                                     Edit
-                                </button>
+                                </Button>
                                 <Link href={`/consultations/new?patientId=${patient.id}`}>
-                                    <button className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity">
-                                        <Plus className="h-4 w-4" />
+                                    <Button icon={<Plus className="h-4 w-4" />}>
                                         New Consultation
-                                    </button>
+                                    </Button>
                                 </Link>
                             </>
                         )}
@@ -294,7 +253,7 @@ export default function PatientDetailPage() {
                     <Calendar className="h-3 w-3" />
                     Registered {formatDate(patient.created_at)}
                 </div>
-            </div>
+            </Card>
 
             {/* Consultation History */}
             <section className="space-y-4">
@@ -306,16 +265,14 @@ export default function PatientDetailPage() {
 
                 <div className="border-2 border-[var(--border)]">
                     {consultations.length === 0 ? (
-                        <div className="p-6 text-center text-[var(--muted)]">
-                            No consultations recorded yet
-                        </div>
+                        <EmptyState message="No consultations recorded yet" />
                     ) : (
                         <div className="divide-y-2 divide-[var(--border)]">
                             {consultations.map((consultation) => (
                                 <Link
                                     key={consultation.id}
                                     href={`/consultations/${consultation.id}`}
-                                    className="flex items-center justify-between p-4 hover:bg-black/5 transition-colors"
+                                    className="flex items-center justify-between p-4 hover:bg-[var(--foreground)]/5 transition-colors"
                                 >
                                     <div className="space-y-1 flex-1 min-w-0">
                                         <div className="flex items-center gap-3">
@@ -344,13 +301,7 @@ export default function PatientDetailPage() {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span
-                                            className={`px-3 py-1 text-xs font-bold uppercase ${getStatusStyle(
-                                                consultation.status
-                                            )}`}
-                                        >
-                                            {consultation.status}
-                                        </span>
+                                        <StatusBadge status={consultation.status} />
                                         <span className="text-xs font-bold">→</span>
                                     </div>
                                 </Link>

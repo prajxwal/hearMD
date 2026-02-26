@@ -5,27 +5,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Users, CalendarDays, FileText, Clock } from "lucide-react";
 import { formatRelativeDate } from "@/lib/utils";
-
-interface DoctorProfile {
-    full_name: string;
-}
-
-interface DashboardStats {
-    todaysConsultations: number;
-    totalPatients: number;
-    totalConsultations: number;
-}
-
-interface RecentPatient {
-    id: string;
-    patient_number: string;
-    name: string;
-    created_at: string;
-}
+import { useDoctor } from "@/lib/doctor-context";
+import { PageHeader, SectionLabel, EmptyState, LoadingState } from "@/components/ui";
+import { Button } from "@/components/ui";
+import type { DashboardStats, RecentPatient } from "@/lib/types";
 
 export default function DashboardPage() {
-    const supabase = createClient();
-    const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
+    const { doctor, loading: doctorLoading } = useDoctor();
     const [stats, setStats] = useState<DashboardStats>({
         todaysConsultations: 0,
         totalPatients: 0,
@@ -35,21 +21,10 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const supabase = createClient();
+
         async function fetchData() {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
-
-                // Fetch doctor
-                const { data: doctorData } = await supabase
-                    .from("doctors")
-                    .select("full_name")
-                    .eq("user_id", user.id)
-                    .single();
-
-                if (doctorData) setDoctor(doctorData);
-
-                // Fetch stats
                 const today = new Date().toISOString().split("T")[0];
 
                 const { count: patientCount } = await supabase
@@ -71,7 +46,6 @@ export default function DashboardPage() {
                     todaysConsultations: todayCount || 0,
                 });
 
-                // Fetch recent patients
                 const { data: patients } = await supabase
                     .from("patients")
                     .select("id, patient_number, name, created_at")
@@ -87,48 +61,39 @@ export default function DashboardPage() {
         }
 
         fetchData();
-    }, [supabase]);
-
-    const formatDate = formatRelativeDate;
+    }, []);
 
     return (
         <div className="space-y-12">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-sm text-[var(--muted)]">
-                    {loading
+            <PageHeader
+                title="Dashboard"
+                subtitle={
+                    loading || doctorLoading
                         ? "Loading..."
-                        : `Welcome back, ${doctor?.full_name || "Doctor"}`}
-                </p>
-            </div>
+                        : `Welcome back, ${doctor?.full_name || "Doctor"}`
+                }
+            />
 
             {/* Quick Actions */}
             <section className="space-y-4">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
-                    Quick Actions
-                </h2>
+                <SectionLabel>Quick Actions</SectionLabel>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Link href="/consultations/new">
-                        <button className="w-full h-14 flex items-center justify-center gap-3 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity">
-                            <Plus className="h-5 w-5" />
+                        <Button className="w-full h-14" icon={<Plus className="h-5 w-5" />}>
                             Start New Consultation
-                        </button>
+                        </Button>
                     </Link>
                     <Link href="/patients">
-                        <button className="w-full h-14 flex items-center justify-center gap-3 border-2 border-[var(--border)] text-sm font-bold uppercase tracking-wide hover:bg-black/5 transition-colors">
-                            <Users className="h-5 w-5" />
+                        <Button variant="secondary" className="w-full h-14" icon={<Users className="h-5 w-5" />}>
                             View All Patients
-                        </button>
+                        </Button>
                     </Link>
                 </div>
             </section>
 
             {/* Stats Grid */}
             <section className="space-y-4">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
-                    Statistics
-                </h2>
+                <SectionLabel>Statistics</SectionLabel>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
                         title="Today"
@@ -160,9 +125,7 @@ export default function DashboardPage() {
             {/* Recent Patients */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
-                        Recent Patients
-                    </h2>
+                    <SectionLabel>Recent Patients</SectionLabel>
                     <Link
                         href="/patients"
                         className="text-xs font-bold uppercase tracking-wide hover:underline"
@@ -172,23 +135,21 @@ export default function DashboardPage() {
                 </div>
                 <div className="border-2 border-[var(--border)]">
                     {loading ? (
-                        <div className="p-6 text-center text-[var(--muted)]">Loading...</div>
+                        <LoadingState />
                     ) : recentPatients.length === 0 ? (
-                        <div className="p-6 text-center text-[var(--muted)]">
-                            No patients yet. Start your first consultation!
-                        </div>
+                        <EmptyState message="No patients yet. Start your first consultation!" />
                     ) : (
                         <div className="divide-y-2 divide-[var(--border)]">
                             {recentPatients.map((patient) => (
                                 <Link
                                     key={patient.id}
                                     href={`/patients/${patient.id}`}
-                                    className="flex items-center justify-between p-4 hover:bg-black/5 transition-colors"
+                                    className="flex items-center justify-between p-4 hover:bg-[var(--foreground)]/5 transition-colors"
                                 >
                                     <div>
                                         <p className="font-bold">{patient.name}</p>
                                         <p className="text-xs text-[var(--muted)]">
-                                            {patient.patient_number} • Added {formatDate(patient.created_at)}
+                                            {patient.patient_number} • Added {formatRelativeDate(patient.created_at)}
                                         </p>
                                     </div>
                                     <span className="text-xs font-bold">→</span>

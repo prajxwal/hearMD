@@ -4,21 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { generatePatientNumber } from "@/lib/utils";
-
-interface Patient {
-    id: string;
-    patient_number: string;
-    name: string;
-    age: number;
-    gender: string;
-    phone: string | null;
-    created_at: string;
-}
+import { PageHeader, EmptyState, LoadingState, SearchBar, Button } from "@/components/ui";
+import { Input } from "@/components/ui";
+import type { Patient } from "@/lib/types";
 
 export default function PatientsPage() {
-    const supabase = createClient();
     const [patients, setPatients] = useState<Patient[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
@@ -37,6 +29,7 @@ export default function PatientsPage() {
 
     const fetchPatients = async () => {
         try {
+            const supabase = createClient();
             const { data, error } = await supabase
                 .from("patients")
                 .select("*")
@@ -72,10 +65,10 @@ export default function PatientsPage() {
         setSaving(true);
 
         try {
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Get doctor ID
             const { data: doctor } = await supabase
                 .from("doctors")
                 .select("id")
@@ -125,50 +118,40 @@ export default function PatientsPage() {
 
     return (
         <div className="space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Patients</h1>
-                    <p className="text-sm text-[var(--muted)]">
-                        {patients.length} patient{patients.length !== 1 ? "s" : ""} registered
-                    </p>
-                </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="h-12 px-6 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity"
-                >
-                    <Plus className="h-4 w-4" />
-                    Add Patient
-                </button>
-            </div>
+            <PageHeader
+                title="Patients"
+                subtitle={`${patients.length} patient${patients.length !== 1 ? "s" : ""} registered`}
+                actions={
+                    <Button
+                        onClick={() => setShowAddModal(true)}
+                        icon={<Plus className="h-4 w-4" />}
+                    >
+                        Add Patient
+                    </Button>
+                }
+            />
 
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-                <input
-                    type="text"
-                    placeholder="Search by name, patient ID, or phone..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
-                />
-            </div>
+            <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Search by name, patient ID, or phone..."
+            />
 
             {/* Patient List */}
             <div className="border-2 border-[var(--border)]">
                 {loading ? (
-                    <div className="p-6 text-center text-[var(--muted)]">Loading...</div>
+                    <LoadingState />
                 ) : filteredPatients.length === 0 ? (
-                    <div className="p-6 text-center text-[var(--muted)]">
-                        {search ? "No patients match your search" : "No patients yet"}
-                    </div>
+                    <EmptyState
+                        message={search ? "No patients match your search" : "No patients yet"}
+                    />
                 ) : (
                     <div className="divide-y-2 divide-[var(--border)]">
                         {filteredPatients.map((patient) => (
                             <Link
                                 key={patient.id}
                                 href={`/patients/${patient.id}`}
-                                className="flex items-center justify-between p-4 hover:bg-black/5 transition-colors"
+                                className="flex items-center justify-between p-4 hover:bg-[var(--foreground)]/5 transition-colors"
                             >
                                 <div className="space-y-1">
                                     <p className="font-bold">{patient.name}</p>
@@ -196,7 +179,7 @@ export default function PatientsPage() {
                                     setShowAddModal(false);
                                     resetForm();
                                 }}
-                                className="p-2 hover:bg-black/5"
+                                className="p-2 hover:bg-[var(--foreground)]/5"
                             >
                                 <X className="h-5 w-5" />
                             </button>
@@ -204,35 +187,23 @@ export default function PatientsPage() {
 
                         {/* Modal Content */}
                         <form onSubmit={handleAddPatient} className="p-4 space-y-4">
-                            {/* Name */}
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold uppercase tracking-wide">
-                                    Patient Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Full name"
-                                    className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
-                                />
-                            </div>
-
-                            {/* Age */}
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold uppercase tracking-wide">
-                                    Age *
-                                </label>
-                                <input
-                                    type="number"
-                                    value={age}
-                                    onChange={(e) => setAge(e.target.value)}
-                                    placeholder="Years"
-                                    min="0"
-                                    max="150"
-                                    className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
-                                />
-                            </div>
+                            <Input
+                                label="Patient Name"
+                                required
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Full name"
+                            />
+                            <Input
+                                label="Age"
+                                required
+                                type="number"
+                                value={age}
+                                onChange={(e) => setAge(e.target.value)}
+                                placeholder="Years"
+                                min={0}
+                                max={150}
+                            />
 
                             {/* Gender */}
                             <div className="space-y-2">
@@ -256,28 +227,17 @@ export default function PatientsPage() {
                                 </div>
                             </div>
 
-                            {/* Phone */}
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold uppercase tracking-wide">
-                                    Phone (Optional)
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    placeholder="+91 9876543210"
-                                    className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
-                                />
-                            </div>
+                            <Input
+                                label="Phone (Optional)"
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="+91 9876543210"
+                            />
 
-                            {/* Submit */}
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="w-full h-12 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 disabled:opacity-50 transition-opacity"
-                            >
-                                {saving ? "Adding..." : "Add Patient"}
-                            </button>
+                            <Button type="submit" loading={saving} className="w-full">
+                                Add Patient
+                            </Button>
                         </form>
                     </div>
                 </div>

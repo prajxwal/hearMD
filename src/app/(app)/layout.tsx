@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { DoctorProvider, useDoctor } from "@/lib/doctor-context";
 import {
     LayoutDashboard,
     Users,
@@ -16,11 +17,6 @@ import {
     X,
 } from "lucide-react";
 
-interface DoctorProfile {
-    full_name: string;
-    specialization: string;
-}
-
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Patients", href: "/patients", icon: Users },
@@ -29,34 +25,25 @@ const navigation = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <DoctorProvider>
+            <AppShell>{children}</AppShell>
+        </DoctorProvider>
+    );
+}
+
+function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const supabase = createClient();
+    const { doctor } = useDoctor();
 
-    const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
-
-    useEffect(() => {
-        async function fetchDoctor() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data } = await supabase
-                .from("doctors")
-                .select("full_name, specialization")
-                .eq("user_id", user.id)
-                .single();
-
-            if (data) setDoctor(data);
-        }
-
-        fetchDoctor();
-    }, [supabase]);
 
     const handleLogout = async () => {
         setLoggingOut(true);
         try {
+            const supabase = createClient();
             await supabase.auth.signOut();
             toast.success("Logged out successfully");
             router.push("/login");
