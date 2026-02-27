@@ -150,15 +150,12 @@ export default function NewConsultationPage() {
 
             if (error) throw error;
 
-            toast.success("Consultation completed!", {
-                action: {
-                    label: "View & Print Rx",
-                    onClick: () => window.open(`/consultations/${consultationId}/prescription`, "_blank"),
-                },
-                duration: 8000,
-            });
+            toast.success("Consultation completed! Opening prescription…");
 
-            setTimeout(() => router.push("/dashboard"), 3000);
+            // Auto-open prescription in a new tab
+            window.open(`/consultations/${consultationId}/prescription`, "_blank");
+
+            setTimeout(() => router.push("/dashboard"), 1500);
         } catch (error) {
             console.error("Error saving consultation:", error);
             toast.error("Failed to save consultation");

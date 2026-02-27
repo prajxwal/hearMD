@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sun, CloudSun, Moon, Plus } from "lucide-react";
+import { Sun, CloudSun, Moon, Plus, ChevronUp, ChevronDown } from "lucide-react";
 import { MedicationAutocomplete } from "@/components/MedicationAutocomplete";
 import type { Prescription } from "@/lib/types";
 
@@ -28,6 +28,16 @@ export function MedicationForm({ medications, onChange }: MedicationFormProps) {
         const updated = [...medications];
         updated[index] = { ...updated[index], [field]: value };
         onChange(updated);
+    };
+
+    const incrementDose = (index: number, field: "morning" | "noon" | "night") => {
+        const current = parseInt(medications[index][field] || "0", 10);
+        updateMedication(index, field, String(current + 1));
+    };
+
+    const decrementDose = (index: number, field: "morning" | "noon" | "night") => {
+        const current = parseInt(medications[index][field] || "0", 10);
+        if (current > 0) updateMedication(index, field, String(current - 1));
     };
 
     const removeMedication = (index: number) => {
@@ -60,39 +70,36 @@ export function MedicationForm({ medications, onChange }: MedicationFormProps) {
                     />
 
                     <div className="grid grid-cols-3 gap-2">
-                        <div className="space-y-1">
-                            <label className="text-xs text-[var(--muted)] flex items-center gap-1">
-                                <Sun className="h-3 w-3" /> Morning
-                            </label>
-                            <input
-                                type="text"
-                                value={med.morning}
-                                onChange={(e) => updateMedication(i, "morning", e.target.value)}
-                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm text-center focus:outline-none"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs text-[var(--muted)] flex items-center gap-1">
-                                <CloudSun className="h-3 w-3" /> Noon
-                            </label>
-                            <input
-                                type="text"
-                                value={med.noon}
-                                onChange={(e) => updateMedication(i, "noon", e.target.value)}
-                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm text-center focus:outline-none"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs text-[var(--muted)] flex items-center gap-1">
-                                <Moon className="h-3 w-3" /> Night
-                            </label>
-                            <input
-                                type="text"
-                                value={med.night}
-                                onChange={(e) => updateMedication(i, "night", e.target.value)}
-                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm text-center focus:outline-none"
-                            />
-                        </div>
+                        {([
+                            { field: "morning" as const, label: "Morning", icon: <Sun className="h-3 w-3" /> },
+                            { field: "noon" as const, label: "Noon", icon: <CloudSun className="h-3 w-3" /> },
+                            { field: "night" as const, label: "Night", icon: <Moon className="h-3 w-3" /> },
+                        ]).map(({ field, label, icon }) => (
+                            <div key={field} className="space-y-1">
+                                <label className="text-xs text-[var(--muted)] flex items-center gap-1">
+                                    {icon} {label}
+                                </label>
+                                <div className="flex items-center border-2 border-[var(--border)] h-10">
+                                    <button
+                                        type="button"
+                                        onClick={() => decrementDose(i, field)}
+                                        className="h-full px-2 flex items-center justify-center hover:bg-[var(--foreground)]/10 transition-colors"
+                                    >
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+                                    <span className="flex-1 text-center text-sm font-bold tabular-nums">
+                                        {med[field]}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => incrementDose(i, field)}
+                                        className="h-full px-2 flex items-center justify-center hover:bg-[var(--foreground)]/10 transition-colors"
+                                    >
+                                        <ChevronUp className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -101,7 +108,8 @@ export function MedicationForm({ medications, onChange }: MedicationFormProps) {
                             <select
                                 value={med.timing}
                                 onChange={(e) => updateMedication(i, "timing", e.target.value)}
-                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none appearance-none cursor-pointer"
+                                style={{ colorScheme: "dark" }}
                             >
                                 <option value="Before food">Before food</option>
                                 <option value="After food">After food</option>
