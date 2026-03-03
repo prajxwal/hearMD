@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAlias, cleanDrugName } from "@/lib/medications";
+import { createClient } from "@/lib/supabase/server";
 
 interface MedicationResult {
     name: string;
@@ -13,6 +14,13 @@ interface MedicationResult {
  * Returns clean, doctor-friendly medication names.
  */
 export async function GET(request: Request) {
+    // Auth check
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q")?.trim();
 
