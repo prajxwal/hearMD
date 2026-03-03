@@ -1,104 +1,47 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import type { ResponseSchema } from "@google/generative-ai";
-
-const EXTRACTION_SCHEMA: ResponseSchema = {
-    type: SchemaType.OBJECT,
-    properties: {
-        chief_complaint: {
-            type: SchemaType.STRING,
-            description: "The patient's main reason for the visit, in one concise sentence",
-        },
-        history_of_present_illness: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Key facts about the current illness as separate bullet points",
-        },
-        past_medical_history: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Relevant past medical conditions, surgeries, allergies mentioned",
-        },
-        examination: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
-            description: "Physical examination findings mentioned by the doctor",
-        },
-        diagnosis: {
-            type: SchemaType.STRING,
-            description: "The provisional/working diagnosis stated or implied by the doctor",
-        },
-        prescription: {
-            type: SchemaType.ARRAY,
-            items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                    name: {
-                        type: SchemaType.STRING,
-                        description: "Medication name with strength if mentioned (e.g. 'Paracetamol 500mg')",
-                    },
-                    morning: {
-                        type: SchemaType.STRING,
-                        description: "Number of units to take in the morning, default '0'",
-                    },
-                    noon: {
-                        type: SchemaType.STRING,
-                        description: "Number of units to take at noon, default '0'",
-                    },
-                    night: {
-                        type: SchemaType.STRING,
-                        description: "Number of units to take at night, default '0'",
-                    },
-                    timing: {
-                        type: SchemaType.STRING,
-                        description: "When to take: 'Before Food', 'After Food', or 'With Food'",
-                    },
-                    duration: {
-                        type: SchemaType.STRING,
-                        description: "How long to take the medication (e.g. '5 days', '1 week')",
-                    },
-                },
-                required: ["name", "morning", "noon", "night", "timing", "duration"],
-            },
-            description: "Medications prescribed during the consultation",
-        },
-        instructions: {
-            type: SchemaType.STRING,
-            description: "General advice and instructions given to the patient (diet, rest, follow-up, etc.)",
-        },
-    },
-    required: [
-        "chief_complaint",
-        "history_of_present_illness",
-        "past_medical_history",
-        "examination",
-        "diagnosis",
-        "prescription",
-        "instructions",
-    ],
-};
 
 const SYSTEM_PROMPT = `You are a clinical documentation assistant for an Indian OPD (outpatient department) setting.
 
 You will receive a transcript of a doctor-patient consultation. Extract structured clinical information from it.
 
+You MUST respond with a valid JSON object with these exact keys:
+{
+  "chief_complaint": "string - patient's main reason for visit in one concise sentence",
+  "history_of_present_illness": ["string array - key facts about the current illness as separate bullet points"],
+  "past_medical_history": ["string array - relevant past conditions, surgeries, allergies mentioned"],
+  "examination": ["string array - physical examination findings mentioned by the doctor"],
+  "diagnosis": "string - the provisional/working diagnosis stated or implied by the doctor",
+  "prescription": [
+    {
+      "name": "string - medication name with strength if mentioned (e.g. Paracetamol 500mg)",
+      "morning": "string - number of units in the morning, default 0",
+      "noon": "string - number of units at noon, default 0",
+      "night": "string - number of units at night, default 0",
+      "timing": "string - Before Food, After Food, or With Food",
+      "duration": "string - how long to take (e.g. 5 days, 1 week)"
+    }
+  ],
+  "instructions": "string - general advice and instructions given to the patient"
+}
+
 Rules:
-- Be accurate — only extract information that is explicitly mentioned or clearly implied in the transcript.
-- Use standard medical terminology but keep it readable for a general practitioner.
-- If a section has no relevant information in the transcript, return an empty string or empty array.
-- For prescriptions, extract the dosage schedule (morning/noon/night counts), timing (Before Food, After Food, With Food), and duration if mentioned.
-- If dosage details are unclear, use reasonable defaults (e.g., "1" for the relevant times of day).
-- For the diagnosis, use the doctor's stated or implied diagnosis. If unclear, write "To be determined".
+- Be accurate — only extract information explicitly mentioned or clearly implied in the transcript.
+- Use standard medical terminology but keep it readable.
+- If a section has no relevant information, return an empty string or empty array.
+- For prescriptions, extract dosage schedule (morning/noon/night), timing, and duration if mentioned.
+- If dosage details are unclear, use reasonable defaults (e.g., "1" for relevant times of day).
+- If diagnosis is unclear, write "To be determined".
 - Keep chief complaint to one concise sentence.
-- Each HPI, PMH, and examination item should be a separate, complete bullet point.
-- Instructions should summarize advice in a short paragraph.`;
+- Each HPI, PMH, and examination item should be a separate bullet point.
+- Instructions should summarize advice in a short paragraph.
+- ONLY respond with the JSON object, no other text.`;
 
 /**
  * POST /api/ai/extract
  *
  * Accepts { transcript: string } and returns structured clinical notes
- * extracted by Gemini Flash.
+ * extracted by Groq (Llama 3.3 70B).
  */
 export async function POST(request: Request) {
     // Auth check
@@ -111,7 +54,7 @@ export async function POST(request: Request) {
     }
 
     // Validate API key
-    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
         return NextResponse.json(
             { error: "AI service not configured" },
@@ -139,24 +82,44 @@ export async function POST(request: Request) {
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: EXTRACTION_SCHEMA,
-                temperature: 0.2, // Low temperature for factual extraction
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
             },
-            systemInstruction: SYSTEM_PROMPT,
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: `Here is the consultation transcript:\n\n${transcript}` },
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0.2,
+                max_tokens: 2048,
+            }),
         });
 
-        const result = await model.generateContent(
-            `Here is the consultation transcript:\n\n${transcript}`
-        );
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error("Groq API error:", response.status, errText);
+            return NextResponse.json(
+                { error: "AI extraction failed" },
+                { status: 500 }
+            );
+        }
 
-        const text = result.response.text();
-        const extraction = JSON.parse(text);
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
 
+        if (!content) {
+            return NextResponse.json(
+                { error: "AI returned empty response" },
+                { status: 500 }
+            );
+        }
+
+        const extraction = JSON.parse(content);
         return NextResponse.json(extraction);
     } catch (error) {
         console.error("AI extraction error:", error);
