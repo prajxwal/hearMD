@@ -14,11 +14,7 @@ interface MedicationAutocompleteProps {
     placeholder?: string;
 }
 
-/**
- * Autocomplete input for medication names.
- * Searches via /api/medications which proxies RxNorm + Indian aliases.
- * Supports keyboard navigation, free-text entry, and click-outside dismiss.
- */
+
 export function MedicationAutocomplete({
     value,
     onChange,

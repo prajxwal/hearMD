@@ -82,9 +82,6 @@ export default function PrescriptionPage() {
                     .no-print { display: none !important; }
                     @page { margin: 15mm; size: A4; }
                 }
-                @media screen {
-                    body { background: #f3f4f6; }
-                }
             `}</style>
 
             {/* Print button (hidden when printing) */}
