@@ -94,7 +94,7 @@ export default function PrescriptionPage() {
                 </button>
                 <button
                     onClick={() => window.close()}
-                    className="px-6 py-3 border-2 border-black text-sm font-bold uppercase tracking-wide hover:opacity-70"
+                    className="px-6 py-3 bg-white border-2 border-black text-black text-sm font-bold uppercase tracking-wide hover:opacity-70"
                 >
                     Close
                 </button>
