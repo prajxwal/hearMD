@@ -43,10 +43,14 @@ export default function NewConsultationPage() {
         examination: [],
         diagnosis: "",
     });
+    const [aiPrefilled, setAiPrefilled] = useState(false);
 
     // Prescription
     const [medications, setMedications] = useState<Prescription[]>([]);
     const [instructions, setInstructions] = useState("");
+
+    // AI extraction loading
+    const [aiLoading, setAiLoading] = useState(false);
 
     // ── Step transitions ────────────────────────────────────
 
@@ -103,16 +107,54 @@ export default function NewConsultationPage() {
     const handleStopRecording = async () => {
         setIsRecording(false);
         await stopTranscription();
-        setTranscript(liveTranscript);
-        setStep("notes");
-        setNotes({
-            chiefComplaint: "",
-            historyOfPresentIllness: [],
-            pastMedicalHistory: [],
-            examination: [],
-            diagnosis: "",
-        });
-        toast.success("Recording stopped. Review transcript and fill in notes.");
+        const finalTranscript = liveTranscript;
+        setTranscript(finalTranscript);
+
+        // AI extraction
+        if (finalTranscript && finalTranscript.trim().length >= 20) {
+            setAiLoading(true);
+            setStep("notes");
+            try {
+                const res = await fetch("/api/ai/extract", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ transcript: finalTranscript }),
+                });
+
+                if (res.ok) {
+                    const ai = await res.json();
+                    setNotes({
+                        chiefComplaint: ai.chief_complaint || "",
+                        historyOfPresentIllness: ai.history_of_present_illness || [],
+                        pastMedicalHistory: ai.past_medical_history || [],
+                        examination: ai.examination || [],
+                        diagnosis: ai.diagnosis || "",
+                    });
+                    setMedications(
+                        (ai.prescription || []).map((p: { name?: string; morning?: string; noon?: string; night?: string; timing?: string; duration?: string }) => ({
+                            name: p.name || "",
+                            morning: p.morning || "0",
+                            noon: p.noon || "0",
+                            night: p.night || "0",
+                            timing: p.timing || "After Food",
+                            duration: p.duration || "",
+                        }))
+                    );
+                    setInstructions(ai.instructions || "");
+                    setAiPrefilled(true);
+                    toast.success("AI notes generated — review and edit as needed");
+                } else {
+                    toast.error("AI extraction failed — fill in notes manually");
+                }
+            } catch {
+                toast.error("AI extraction failed — fill in notes manually");
+            } finally {
+                setAiLoading(false);
+            }
+        } else {
+            setStep("notes");
+            toast.success("Recording stopped. Fill in clinical notes.");
+        }
     };
 
     const handleNotesComplete = () => {
@@ -216,6 +258,8 @@ export default function NewConsultationPage() {
                     setNotes={setNotes}
                     transcript={transcript}
                     onComplete={handleNotesComplete}
+                    aiLoading={aiLoading}
+                    aiPrefilled={aiPrefilled}
                 />
             )}
 
