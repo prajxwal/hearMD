@@ -23,7 +23,7 @@ export default function PrescriptionPage() {
                         diagnosis,
                         prescription,
                         instructions,
-                        patient:patients(name, age, gender, patient_number),
+                        patient:patients(name, age, gender, dob, patient_number),
                         doctor:doctors(full_name, registration_number, specialization, clinic_name, clinic_address)
                     `)
                     .eq("id", params.id)
@@ -152,6 +152,14 @@ export default function PrescriptionPage() {
                                     <td style={{ fontWeight: 700, paddingRight: "12px", paddingBottom: "4px" }}>Age / Gender</td>
                                     <td style={{ paddingBottom: "4px" }}>
                                         {data.patient?.age || "—"} years / {data.patient?.gender || "—"}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: 700, paddingRight: "12px", paddingBottom: "4px" }}>DOB</td>
+                                    <td style={{ paddingBottom: "4px" }}>
+                                        {data.patient?.dob
+                                            ? new Date(data.patient.dob).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+                                            : "—"}
                                     </td>
                                 </tr>
                                 <tr>

@@ -34,6 +34,7 @@ CREATE TABLE patients (
     name TEXT NOT NULL CHECK (char_length(trim(name)) > 0 AND char_length(name) <= 200),
     age INTEGER NOT NULL CHECK (age >= 0 AND age <= 150),
     gender TEXT NOT NULL CHECK (gender IN ('Male', 'Female', 'Other')),
+    dob DATE,
     phone TEXT CHECK (phone IS NULL OR char_length(phone) <= 15),
     created_by UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW(),

@@ -21,7 +21,7 @@ export default function PatientDetailPage() {
 
     // Edit mode
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ name: "", age: 0, gender: "", phone: "" });
+    const [editForm, setEditForm] = useState({ name: "", age: 0, gender: "", dob: "", phone: "" });
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -31,7 +31,7 @@ export default function PatientDetailPage() {
             try {
                 const { data: patientData, error: patientError } = await supabase
                     .from("patients")
-                    .select("id, patient_number, name, age, gender, phone, created_at")
+                    .select("id, patient_number, name, age, gender, dob, phone, created_at")
                     .eq("id", params.id)
                     .single();
 
@@ -61,6 +61,7 @@ export default function PatientDetailPage() {
             name: patient.name,
             age: patient.age,
             gender: patient.gender,
+            dob: patient.dob || "",
             phone: patient.phone || "",
         });
         setIsEditing(true);
@@ -87,6 +88,7 @@ export default function PatientDetailPage() {
                     name: editForm.name.trim(),
                     age: editForm.age,
                     gender: editForm.gender,
+                    dob: editForm.dob || null,
                     phone: editForm.phone.trim() || null,
                     updated_at: new Date().toISOString(),
                 })
@@ -99,6 +101,7 @@ export default function PatientDetailPage() {
                 name: editForm.name.trim(),
                 age: editForm.age,
                 gender: editForm.gender,
+                dob: editForm.dob || null,
                 phone: editForm.phone.trim() || null,
             });
             setIsEditing(false);
@@ -214,6 +217,27 @@ export default function PatientDetailPage() {
                             </select>
                         </div>
                         <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">DOB</label>
+                            <input
+                                type="date"
+                                value={editForm.dob}
+                                onChange={(e) => {
+                                    const dob = e.target.value;
+                                    setEditForm({ ...editForm, dob });
+                                    if (dob) {
+                                        const birth = new Date(dob);
+                                        const today = new Date();
+                                        let age = today.getFullYear() - birth.getFullYear();
+                                        const m = today.getMonth() - birth.getMonth();
+                                        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                                        setEditForm(prev => ({ ...prev, dob, age: Math.max(0, age) }));
+                                    }
+                                }}
+                                className="w-full h-10 px-3 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
+                                style={{ colorScheme: "dark" }}
+                            />
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Phone</label>
                             <input
                                 type="text"
@@ -237,6 +261,10 @@ export default function PatientDetailPage() {
                         <div>
                             <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Gender</p>
                             <p className="text-sm font-bold mt-1">{patient.gender}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">DOB</p>
+                            <p className="text-sm font-bold mt-1">{patient.dob ? new Date(patient.dob).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}</p>
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Phone</p>

@@ -12,12 +12,13 @@ export interface Patient {
     name: string;
     age: number;
     gender: string;
+    dob: string | null;
     phone: string | null;
     created_at: string;
 }
 
 /** Lighter version returned by search / select queries. */
-export type PatientSummary = Pick<Patient, "id" | "patient_number" | "name" | "age" | "gender">;
+export type PatientSummary = Pick<Patient, "id" | "patient_number" | "name" | "age" | "gender" | "dob">;
 
 // ── Doctor ──────────────────────────────────────────────────
 
@@ -99,7 +100,7 @@ export interface PrescriptionPageData {
     diagnosis: string | null;
     prescription: Prescription[];
     instructions: string | null;
-    patient: Pick<Patient, "name" | "age" | "gender" | "patient_number">;
+    patient: Pick<Patient, "name" | "age" | "gender" | "dob" | "patient_number">;
     doctor: Required<Pick<DoctorProfile, "full_name" | "registration_number" | "specialization">> &
     Pick<DoctorProfile, "clinic_name" | "clinic_address">;
 }

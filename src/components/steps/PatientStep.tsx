@@ -24,10 +24,24 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
 
     // New patient form
     const [patientName, setPatientName] = useState("");
+    const [patientDob, setPatientDob] = useState("");
     const [patientAge, setPatientAge] = useState("");
     const [patientGender, setPatientGender] = useState("");
     const [patientPhone, setPatientPhone] = useState("");
     const [consent, setConsent] = useState(false);
+
+    // Auto-calculate age from DOB
+    const handleDobChange = (dob: string) => {
+        setPatientDob(dob);
+        if (dob) {
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+            setPatientAge(String(Math.max(0, age)));
+        }
+    };
 
     // Auto-select patient if ID was passed via URL
     useEffect(() => {
@@ -37,7 +51,7 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
         async function fetchPatient() {
             const { data } = await supabase
                 .from("patients")
-                .select("id, patient_number, name, age, gender")
+                .select("id, patient_number, name, age, gender, dob")
                 .eq("id", initialPatientId)
                 .single();
 
@@ -59,7 +73,7 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
         const supabase = createClient();
         const { data } = await supabase
             .from("patients")
-            .select("id, patient_number, name, age, gender")
+            .select("id, patient_number, name, age, gender, dob")
             .or(`name.ilike.%${query}%,patient_number.ilike.%${query}%`)
             .limit(10);
 
@@ -121,6 +135,7 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
                         name: patientName,
                         age: parseInt(patientAge),
                         gender: patientGender,
+                        dob: patientDob || null,
                         phone: patientPhone || null,
                         created_by: doctor.id,
                     })
@@ -135,6 +150,7 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
                     name: patientName,
                     age: parseInt(patientAge),
                     gender: patientGender,
+                    dob: patientDob || null,
                 };
             }
 
@@ -234,6 +250,16 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
                                 onChange={(e) => setPatientName(e.target.value)}
                                 placeholder="Full name"
                                 className="w-full h-12 px-4 border-2 border-[var(--border)] bg-transparent text-sm focus:outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-xs font-bold uppercase tracking-wide">Date of Birth</label>
+                            <input
+                                type="date"
+                                value={patientDob}
+                                onChange={(e) => handleDobChange(e.target.value)}
+                                className="w-full h-12 px-4 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none"
+                                style={{ colorScheme: "dark" }}
                             />
                         </div>
                         <div className="space-y-2">
