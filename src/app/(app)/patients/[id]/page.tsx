@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Plus, FileText, Calendar, Pencil, X, Check } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Calendar, Pencil, X, Check, Trash2 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { validatePatient } from "@/lib/validation";
@@ -23,6 +23,7 @@ export default function PatientDetailPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ name: "", age: 0, gender: "", dob: "", phone: "" });
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         const supabase = createClient();
@@ -176,6 +177,32 @@ export default function PatientDetailPage() {
                             </>
                         ) : (
                             <>
+                                <Button
+                                    variant="secondary"
+                                    onClick={async () => {
+                                        const count = consultations.length;
+                                        const msg = count > 0
+                                            ? `This will permanently delete ${patient.name} and ${count} consultation${count > 1 ? "s" : ""}. This cannot be undone. Are you sure?`
+                                            : `This will permanently delete ${patient.name}. This cannot be undone. Are you sure?`;
+                                        if (!confirm(msg)) return;
+                                        setDeleting(true);
+                                        try {
+                                            const supabase = createClient();
+                                            const { error } = await supabase.from("patients").delete().eq("id", patient.id);
+                                            if (error) throw error;
+                                            toast.success("Patient deleted");
+                                            router.push("/patients");
+                                        } catch {
+                                            toast.error("Failed to delete patient");
+                                            setDeleting(false);
+                                        }
+                                    }}
+                                    loading={deleting}
+                                    icon={<Trash2 className="h-4 w-4" />}
+                                    className="text-red-500 border-red-500/30 hover:bg-red-500/10"
+                                >
+                                    Delete
+                                </Button>
                                 <Button variant="secondary" onClick={startEditing} icon={<Pencil className="h-4 w-4" />}>
                                     Edit
                                 </Button>
