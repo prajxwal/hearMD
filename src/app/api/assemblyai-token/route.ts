@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+
+// 10 requests per 15 minutes per user
+const limiter = createRateLimiter(10, 15 * 60 * 1000);
 
 export async function GET() {
     // Authenticate: only logged-in users can request a streaming token
@@ -14,6 +18,10 @@ export async function GET() {
             { status: 401 }
         );
     }
+
+    // Rate limit
+    const { allowed, remaining, resetIn } = limiter.check(user.id);
+    if (!allowed) return rateLimitResponse(resetIn, 10);
 
     const apiKey = process.env.ASSEMBLYAI_API_KEY;
 

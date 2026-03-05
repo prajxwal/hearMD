@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+
+// 10 requests per 15 minutes per user
+const limiter = createRateLimiter(10, 15 * 60 * 1000);
 
 const SYSTEM_PROMPT = `You are a clinical documentation assistant for an Indian OPD (outpatient department) setting.
 
@@ -52,6 +56,10 @@ export async function POST(request: Request) {
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit
+    const { allowed, remaining, resetIn } = limiter.check(user.id);
+    if (!allowed) return rateLimitResponse(resetIn, 10);
 
     // Validate API key
     const apiKey = process.env.GROQ_API_KEY;

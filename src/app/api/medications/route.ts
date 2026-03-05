@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { resolveAlias, cleanDrugName } from "@/lib/medications";
 import { createClient } from "@/lib/supabase/server";
+import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+
+// 30 requests per minute per user
+const limiter = createRateLimiter(30, 60 * 1000);
 
 interface MedicationResult {
     name: string;
@@ -20,6 +24,10 @@ export async function GET(request: Request) {
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit
+    const { allowed, remaining, resetIn } = limiter.check(user.id);
+    if (!allowed) return rateLimitResponse(resetIn, 30);
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q")?.trim();
