@@ -76,13 +76,7 @@ export default function PrescriptionPage() {
 
     return (
         <>
-            <style jsx global>{`
-                @media print {
-                    body { margin: 0; padding: 0; }
-                    .no-print { display: none !important; }
-                    @page { margin: 15mm; size: A4; }
-                }
-            `}</style>
+            {/* Print styles are in globals.css for cross-browser reliability */}
 
             {/* Print button (hidden when printing) */}
             <div className="no-print fixed top-4 right-4 flex gap-2 z-50">
@@ -102,22 +96,22 @@ export default function PrescriptionPage() {
 
             {/* Prescription Document */}
             <div
-                className="max-w-[210mm] mx-auto bg-white"
+                className="max-w-[210mm] mx-auto bg-white prescription-doc"
                 style={{
                     fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
                     color: "#000",
-                    padding: "40px",
-                    minHeight: "297mm",
+                    padding: "24px 32px",
                 }}
             >
                 {/* Header — Doctor Info */}
-                <div style={{ borderBottom: "3px solid #000", paddingBottom: "16px", marginBottom: "20px" }}>
+              <div>
+                <div style={{ borderBottom: "2px solid #000", paddingBottom: "10px", marginBottom: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
-                            <h1 style={{ fontSize: "24px", fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
+                            <h1 style={{ fontSize: "20px", fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
                                 Dr. {data.doctor?.full_name || "—"}
                             </h1>
-                            <p style={{ fontSize: "14px", color: "#555", margin: "4px 0 0 0" }}>
+                            <p style={{ fontSize: "12px", color: "#555", margin: "2px 0 0 0" }}>
                                 {data.doctor?.specialization || "—"}
                             </p>
                             <p style={{ fontSize: "12px", color: "#777", margin: "2px 0 0 0" }}>
@@ -140,7 +134,7 @@ export default function PrescriptionPage() {
                 </div>
 
                 {/* Patient Info + Date */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px", fontSize: "13px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "12px" }}>
                     <div>
                         <table style={{ borderCollapse: "collapse" }}>
                             <tbody>
@@ -177,11 +171,11 @@ export default function PrescriptionPage() {
 
                 {/* Chief Complaint */}
                 {data.chief_complaint && (
-                    <div style={{ marginBottom: "16px" }}>
-                        <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 6px 0" }}>
+                    <div style={{ marginBottom: "10px" }}>
+                        <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 4px 0" }}>
                             Chief Complaint
                         </p>
-                        <p style={{ fontSize: "13px", margin: 0, padding: "8px 12px", border: "1px solid #ddd" }}>
+                        <p style={{ fontSize: "12px", margin: 0, padding: "6px 10px", border: "1px solid #ddd" }}>
                             {data.chief_complaint}
                         </p>
                     </div>
@@ -189,13 +183,13 @@ export default function PrescriptionPage() {
 
                 {/* History of Present Illness */}
                 {data.history_of_present_illness.length > 0 && (
-                    <div style={{ marginBottom: "16px" }}>
-                        <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 6px 0" }}>
+                    <div style={{ marginBottom: "10px" }}>
+                        <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 4px 0" }}>
                             History of Present Illness
                         </p>
-                        <ul style={{ fontSize: "13px", margin: 0, padding: "8px 12px 8px 28px", border: "1px solid #ddd", listStyle: "disc" }}>
+                        <ul style={{ fontSize: "12px", margin: 0, padding: "4px 10px 4px 24px", border: "1px solid #ddd", listStyle: "disc" }}>
                             {data.history_of_present_illness.map((item: string, i: number) => (
-                                <li key={i} style={{ marginBottom: "4px" }}>{item}</li>
+                                <li key={i} style={{ marginBottom: "2px" }}>{item}</li>
                             ))}
                         </ul>
                     </div>
@@ -203,71 +197,73 @@ export default function PrescriptionPage() {
 
                 {/* Diagnosis */}
                 {data.diagnosis && (
-                    <div style={{ marginBottom: "24px" }}>
-                        <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 6px 0" }}>
+                    <div style={{ marginBottom: "12px" }}>
+                        <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 4px 0" }}>
                             Diagnosis
                         </p>
-                        <p style={{ fontSize: "14px", fontWeight: 600, margin: 0, padding: "8px 12px", border: "2px solid #000" }}>
+                        <p style={{ fontSize: "13px", fontWeight: 600, margin: 0, padding: "6px 10px", border: "2px solid #000" }}>
                             {data.diagnosis}
                         </p>
                     </div>
                 )}
 
                 {/* Rx Symbol */}
-                <div style={{ marginBottom: "16px" }}>
-                    <span style={{ fontSize: "28px", fontWeight: 800, fontStyle: "italic" }}>℞</span>
+                <div style={{ marginBottom: "8px" }}>
+                    <span style={{ fontSize: "24px", fontWeight: 800, fontStyle: "italic" }}>℞</span>
                 </div>
 
                 {/* Prescription Table */}
                 {data.prescription.length > 0 ? (
-                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "32px", fontSize: "13px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "12px" }}>
                         <thead>
                             <tr style={{ borderBottom: "2px solid #000" }}>
-                                <th style={{ textAlign: "left", padding: "8px 8px 8px 0", fontWeight: 700, fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px" }}>#</th>
-                                <th style={{ textAlign: "left", padding: "8px", fontWeight: 700, fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px" }}>Medication</th>
-                                <th style={{ textAlign: "center", padding: "8px", fontWeight: 700, fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px" }}>Dosage (M-N-N)</th>
-                                <th style={{ textAlign: "left", padding: "8px", fontWeight: 700, fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px" }}>Timing</th>
-                                <th style={{ textAlign: "left", padding: "8px 0 8px 8px", fontWeight: 700, fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px" }}>Duration</th>
+                                <th style={{ textAlign: "left", padding: "6px 6px 6px 0", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>#</th>
+                                <th style={{ textAlign: "left", padding: "6px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>Medication</th>
+                                <th style={{ textAlign: "center", padding: "6px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>Dosage (M-N-N)</th>
+                                <th style={{ textAlign: "left", padding: "6px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>Timing</th>
+                                <th style={{ textAlign: "left", padding: "6px 0 6px 6px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>Duration</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.prescription.map((med: PrescriptionPageData["prescription"][number], i: number) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #ddd" }}>
-                                    <td style={{ padding: "10px 8px 10px 0", color: "#888" }}>{i + 1}</td>
-                                    <td style={{ padding: "10px 8px", fontWeight: 600 }}>{med.name}</td>
-                                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "monospace", fontWeight: 600 }}>
+                                    <td style={{ padding: "6px 6px 6px 0", color: "#888" }}>{i + 1}</td>
+                                    <td style={{ padding: "6px", fontWeight: 600 }}>{med.name}</td>
+                                    <td style={{ padding: "6px", textAlign: "center", fontFamily: "monospace", fontWeight: 600 }}>
                                         {med.morning || "0"} - {med.noon || "0"} - {med.night || "0"}
                                     </td>
-                                    <td style={{ padding: "10px 8px" }}>{med.timing}</td>
-                                    <td style={{ padding: "10px 0 10px 8px" }}>{med.duration}</td>
+                                    <td style={{ padding: "6px" }}>{med.timing}</td>
+                                    <td style={{ padding: "6px 0 6px 6px" }}>{med.duration}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 ) : (
-                    <p style={{ fontSize: "13px", color: "#888", marginBottom: "32px" }}>No medications prescribed</p>
+                    <p style={{ fontSize: "12px", color: "#888", marginBottom: "16px" }}>No medications prescribed</p>
                 )}
 
                 {/* Instructions */}
                 {data.instructions && (
-                    <div style={{ marginBottom: "32px" }}>
-                        <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 8px 0" }}>
+                    <div style={{ marginBottom: "12px" }}>
+                        <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#888", margin: "0 0 4px 0" }}>
                             Advice / Instructions
                         </p>
-                        <p style={{ fontSize: "13px", margin: 0, whiteSpace: "pre-wrap", padding: "8px 12px", border: "1px solid #ddd", lineHeight: 1.6 }}>
+                        <p style={{ fontSize: "12px", margin: 0, whiteSpace: "pre-wrap", padding: "6px 10px", border: "1px solid #ddd", lineHeight: 1.4 }}>
                             {data.instructions}
                         </p>
                     </div>
                 )}
 
+              </div>
+
                 {/* Signature */}
-                <div style={{ marginTop: "80px", display: "flex", justifyContent: "flex-end" }}>
-                    <div style={{ textAlign: "center", minWidth: "200px" }}>
-                        <div style={{ borderTop: "2px solid #000", paddingTop: "8px" }}>
-                            <p style={{ fontSize: "14px", fontWeight: 700, margin: 0 }}>
+                <div className="prescription-signature" style={{ marginTop: "48px", display: "flex", justifyContent: "flex-end" }}>
+                    <div style={{ textAlign: "center", minWidth: "180px" }}>
+                        <div style={{ borderTop: "2px solid #000", paddingTop: "6px" }}>
+                            <p style={{ fontSize: "13px", fontWeight: 700, margin: 0 }}>
                                 Dr. {data.doctor?.full_name || "—"}
                             </p>
-                            <p style={{ fontSize: "11px", color: "#555", margin: "2px 0 0 0" }}>
+                            <p style={{ fontSize: "10px", color: "#555", margin: "2px 0 0 0" }}>
                                 {data.doctor?.specialization}
                             </p>
                         </div>

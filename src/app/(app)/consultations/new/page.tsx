@@ -195,7 +195,7 @@ export default function NewConsultationPage() {
             toast.success("Consultation completed! Opening prescription…");
 
             // Auto-open prescription in a new tab
-            window.open(`/consultations/${consultationId}/prescription`, "_blank");
+            window.open(`/prescription/${consultationId}`, "_blank");
 
             setTimeout(() => router.push("/dashboard"), 1500);
         } catch (error) {

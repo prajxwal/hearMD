@@ -6,7 +6,7 @@
 export default function PrescriptionLayout({ children }: { children: React.ReactNode }) {
     return (
         <div
-            className="fixed inset-0 z-[100] overflow-auto"
+            className="fixed inset-0 z-[100] overflow-auto prescription-layout-wrapper"
             style={{ background: "#f3f4f6" }}
         >
             {children}

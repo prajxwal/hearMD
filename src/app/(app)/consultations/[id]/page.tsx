@@ -218,7 +218,7 @@ export default function ConsultationDetailPage() {
                         {!isEditing ? (
                             <>
                                 <Link
-                                    href={`/consultations/${consultation.id}/prescription`}
+                                    href={`/prescription/${consultation.id}`}
                                     target="_blank"
                                     className="h-10 px-4 flex items-center gap-2 bg-[var(--foreground)] text-[var(--background)] text-sm font-bold uppercase tracking-wide hover:opacity-90 transition-opacity"
                                 >
