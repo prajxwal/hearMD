@@ -20,7 +20,7 @@ You MUST respond with a valid JSON object with these exact keys:
     {
       "name": "string - medication name with strength if mentioned (e.g. Paracetamol 500mg)",
       "morning": "string - number of units in the morning, default 0",
-      "noon": "string - number of units at noon, default 0",
+      "noon": "string - number of units in the afternoon, default 0",
       "night": "string - number of units at night, default 0",
       "timing": "string - Before Food, After Food, or With Food",
       "duration": "string - how long to take (e.g. 5 days, 1 week)"
@@ -33,7 +33,7 @@ Rules:
 - Be accurate — only extract information explicitly mentioned or clearly implied in the transcript.
 - Use standard medical terminology but keep it readable.
 - If a section has no relevant information, return an empty string or empty array.
-- For prescriptions, extract dosage schedule (morning/noon/night), timing, and duration if mentioned.
+- For prescriptions, extract dosage schedule (morning/afternoon/night), timing, and duration if mentioned.
 - If dosage details are unclear, use reasonable defaults (e.g., "1" for relevant times of day).
 - If diagnosis is unclear, write "To be determined".
 - Keep chief complaint to one concise sentence.

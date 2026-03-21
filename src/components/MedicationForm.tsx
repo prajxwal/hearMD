@@ -72,7 +72,7 @@ export function MedicationForm({ medications, onChange }: MedicationFormProps) {
                     <div className="grid grid-cols-3 gap-2">
                         {([
                             { field: "morning" as const, label: "Morning", icon: <Sun className="h-3 w-3" /> },
-                            { field: "noon" as const, label: "Noon", icon: <CloudSun className="h-3 w-3" /> },
+                            { field: "noon" as const, label: "Afternoon", icon: <CloudSun className="h-3 w-3" /> },
                             { field: "night" as const, label: "Night", icon: <Moon className="h-3 w-3" /> },
                         ]).map(({ field, label, icon }) => (
                             <div key={field} className="space-y-1">

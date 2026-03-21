@@ -169,9 +169,9 @@ export default function PrescriptionPage() {
                     <button
                         onClick={() => window.close()}
                         style={{
-                            padding: "12px 24px", background: "transparent", color: "#888",
+                            padding: "12px 24px", background: "#fff", color: "#000",
                             fontSize: "13px", fontWeight: 700, textTransform: "uppercase" as const,
-                            letterSpacing: "1px", border: "1px solid #888", cursor: "pointer",
+                            letterSpacing: "1px", border: "2px solid #000", cursor: "pointer",
                         }}
                     >
                         Close
@@ -316,7 +316,7 @@ export default function PrescriptionPage() {
                                     <tr style={{ borderBottom: "2px solid #000" }}>
                                         <th style={{ textAlign: "left", padding: "8px 8px 8px 0", fontWeight: 700, fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1px" }}>#</th>
                                         <th style={{ textAlign: "left", padding: "8px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1px" }}>Medication</th>
-                                        <th style={{ textAlign: "center", padding: "8px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1px" }}>Dosage (M-N-N)</th>
+                                        <th style={{ textAlign: "center", padding: "8px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1px" }}>Dosage (M-A-N)</th>
                                         <th style={{ textAlign: "left", padding: "8px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1px" }}>Timing</th>
                                         <th style={{ textAlign: "left", padding: "8px 0 8px 8px", fontWeight: 700, fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1px" }}>Duration</th>
                                     </tr>
