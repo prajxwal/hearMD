@@ -2,7 +2,7 @@
 
 import { EditableList } from "@/components/EditableList";
 import { Button } from "@/components/ui";
-import { Sparkles, Loader2, Stethoscope } from "lucide-react";
+import { Sparkles, Loader2, Stethoscope, PenLine } from "lucide-react";
 
 export interface ClinicalNotes {
     chiefComplaint: string;
@@ -56,6 +56,16 @@ export function NotesStep({ notes, setNotes, transcript, onComplete, aiLoading, 
                     <Sparkles className="h-4 w-4 flex-shrink-0" />
                     <p className="text-sm">
                         <strong>AI-generated</strong> — review and edit before saving
+                    </p>
+                </div>
+            )}
+
+            {/* Manual Entry Banner */}
+            {!aiPrefilled && !transcript && !isHistoryPhase && (
+                <div className="flex items-center gap-2 p-3 border-2 border-[var(--border)] bg-[var(--surface)]">
+                    <PenLine className="h-4 w-4 flex-shrink-0 text-[var(--muted)]" />
+                    <p className="text-sm text-[var(--muted)]">
+                        <strong>Manual entry</strong> — no recording was made for this consultation
                     </p>
                 </div>
             )}

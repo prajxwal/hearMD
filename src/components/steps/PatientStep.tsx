@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import type { PatientSummary } from "@/lib/types";
 
 interface PatientStepProps {
-    onComplete: (patientId: string, patient: PatientSummary) => void;
+    onComplete: (patientId: string, patient: PatientSummary, consentGiven: boolean) => void;
     loading: boolean;
     setLoading: (v: boolean) => void;
     initialPatientId?: string | null;
@@ -85,10 +85,6 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
     }, [searchQuery, searchPatients]);
 
     const handleSubmit = async () => {
-        if (!consent) {
-            toast.error("Patient consent is required");
-            return;
-        }
 
         setLoading(true);
 
@@ -154,7 +150,7 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
                 };
             }
 
-            onComplete(patientId!, patient!);
+            onComplete(patientId!, patient!, consent);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Failed to start";
             toast.error(message);
@@ -313,7 +309,7 @@ export function PatientStep({ onComplete, loading, setLoading, initialPatientId 
             </label>
 
             <Button onClick={handleSubmit} loading={loading} className="w-full h-14">
-                Start Recording
+                {consent ? "Start Recording" : "Continue Without Recording"}
             </Button>
         </div>
     );

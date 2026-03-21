@@ -62,7 +62,7 @@ export default function NewConsultationPage() {
 
     // ── Step transitions ────────────────────────────────────
 
-    const handlePatientComplete = async (patientId: string, patient: PatientSummary) => {
+    const handlePatientComplete = async (patientId: string, patient: PatientSummary, consentGiven: boolean) => {
         try {
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
@@ -82,8 +82,8 @@ export default function NewConsultationPage() {
                 .insert({
                     patient_id: patientId,
                     doctor_id: doctor.id,
-                    consent_logged: true,
-                    status: "recording",
+                    consent_logged: consentGiven,
+                    status: consentGiven ? "recording" : "draft",
                 })
                 .select("id")
                 .single();
@@ -91,6 +91,15 @@ export default function NewConsultationPage() {
             if (error) throw error;
             setConsultationId(consultationData.id);
             setSelectedPatient(patient);
+
+            if (!consentGiven) {
+                // Skip recording — go straight to manual notes
+                setPhase("examination"); // all fields editable
+                setStep("notes");
+                setAiPrefilled(false);
+                toast.success("Manual entry mode — type your clinical notes below");
+                return;
+            }
 
             // Start in Phase 1 (History)
             setPhase("history");
