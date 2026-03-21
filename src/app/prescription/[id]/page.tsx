@@ -107,6 +107,33 @@ export default function PrescriptionPage() {
         year: "numeric",
     });
 
+    // Build the auto-filename for PDF export
+    const fileDate = new Date(data.created_at).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    }).replace(/ /g, "-");
+    const patientName = (data.patient?.name || "Patient").replace(/\s+/g, "_");
+    const pdfFilename = `Rx_${patientName}_${fileDate}`;
+    document.title = pdfFilename;
+
+    const handleSavePdf = async () => {
+        const html2pdf = (await import("html2pdf.js")).default;
+        const element = document.querySelector(".rx-page") as HTMLElement;
+        if (!element) return;
+
+        html2pdf()
+            .set({
+                margin: 0,
+                filename: `${pdfFilename}.pdf`,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            })
+            .from(element)
+            .save();
+    };
+
     return (
         <>
             {/* Print styles — injected via dangerouslySetInnerHTML for cross-browser reliability */}
@@ -120,21 +147,31 @@ export default function PrescriptionPage() {
                     position: "fixed", top: 16, right: 16, display: "flex", gap: 8, zIndex: 50,
                 }}>
                     <button
-                        onClick={() => window.print()}
+                        onClick={handleSavePdf}
                         style={{
                             padding: "12px 24px", background: "#000", color: "#fff",
                             fontSize: "13px", fontWeight: 700, textTransform: "uppercase" as const,
                             letterSpacing: "1px", border: "none", cursor: "pointer",
                         }}
                     >
-                        Print / Save PDF
+                        Save PDF
                     </button>
                     <button
-                        onClick={() => window.close()}
+                        onClick={() => window.print()}
                         style={{
                             padding: "12px 24px", background: "#fff", color: "#000",
                             fontSize: "13px", fontWeight: 700, textTransform: "uppercase" as const,
                             letterSpacing: "1px", border: "2px solid #000", cursor: "pointer",
+                        }}
+                    >
+                        Print
+                    </button>
+                    <button
+                        onClick={() => window.close()}
+                        style={{
+                            padding: "12px 24px", background: "transparent", color: "#888",
+                            fontSize: "13px", fontWeight: 700, textTransform: "uppercase" as const,
+                            letterSpacing: "1px", border: "1px solid #888", cursor: "pointer",
                         }}
                     >
                         Close
