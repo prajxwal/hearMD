@@ -12,6 +12,7 @@ import { PrescriptionStep } from "@/components/steps/PrescriptionStep";
 import type { PatientSummary, Prescription } from "@/lib/types";
 
 type Step = "patient" | "recording" | "notes" | "prescription";
+type ConsultationPhase = "history" | "examination";
 
 const STEPS: Step[] = ["patient", "recording", "notes", "prescription"];
 
@@ -24,6 +25,9 @@ export default function NewConsultationPage() {
     const [consultationId, setConsultationId] = useState<string | null>(null);
     const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
 
+    // Phase state
+    const [phase, setPhase] = useState<ConsultationPhase>("history");
+
     // Recording hook
     const {
         transcript: liveTranscript,
@@ -35,12 +39,16 @@ export default function NewConsultationPage() {
     const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState("");
 
+    // Store Phase 1 transcript separately for merging
+    const [phase1Transcript, setPhase1Transcript] = useState("");
+
     // Notes
     const [notes, setNotes] = useState<ClinicalNotes>({
         chiefComplaint: "",
         historyOfPresentIllness: [],
         pastMedicalHistory: [],
         examination: [],
+        investigations: [],
         diagnosis: "",
     });
     const [aiPrefilled, setAiPrefilled] = useState(false);
@@ -84,13 +92,15 @@ export default function NewConsultationPage() {
             setConsultationId(consultationData.id);
             setSelectedPatient(patient);
 
+            // Start in Phase 1 (History)
+            setPhase("history");
             setStep("recording");
             setIsRecording(true);
 
             // Start real-time transcription
             try {
                 await startTranscription();
-                toast.success("Recording started — speak into your microphone");
+                toast.success("Recording started — Phase 1: History Taking");
             } catch {
                 toast.error("Microphone access failed. Please allow mic permission and try again.");
                 setIsRecording(false);
@@ -104,13 +114,18 @@ export default function NewConsultationPage() {
         }
     };
 
-    const handleStopRecording = async () => {
+    /**
+     * Phase 1 → Pause for examination.
+     * Stops recording, sends transcript with phase="history", shows notes with pending fields.
+     */
+    const handlePauseForExamination = async () => {
         setIsRecording(false);
         await stopTranscription();
         const finalTranscript = liveTranscript;
+        setPhase1Transcript(finalTranscript);
         setTranscript(finalTranscript);
 
-        // AI extraction
+        // AI extraction — Phase 1 (history only)
         if (finalTranscript && finalTranscript.trim().length >= 20) {
             setAiLoading(true);
             setStep("notes");
@@ -118,7 +133,10 @@ export default function NewConsultationPage() {
                 const res = await fetch("/api/ai/extract", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ transcript: finalTranscript }),
+                    body: JSON.stringify({
+                        transcript: finalTranscript,
+                        phase: "history",
+                    }),
                 });
 
                 if (res.ok) {
@@ -127,9 +145,85 @@ export default function NewConsultationPage() {
                         chiefComplaint: ai.chief_complaint || "",
                         historyOfPresentIllness: ai.history_of_present_illness || [],
                         pastMedicalHistory: ai.past_medical_history || [],
-                        examination: ai.examination || [],
-                        diagnosis: ai.diagnosis || "",
+                        examination: [],
+                        investigations: [],
+                        diagnosis: "",
                     });
+                    setAiPrefilled(true);
+                    toast.success("Phase 1 notes generated — review history, then resume for examination");
+                } else {
+                    toast.error("AI extraction failed — fill in notes manually");
+                }
+            } catch {
+                toast.error("AI extraction failed — fill in notes manually");
+            } finally {
+                setAiLoading(false);
+            }
+        } else {
+            setStep("notes");
+            toast.success("Recording paused. Fill in history notes, then resume for examination.");
+        }
+    };
+
+    /**
+     * Resume from NotesStep → Phase 2 recording.
+     * Starts a fresh recording session for examination findings.
+     */
+    const handleResumeExamination = async () => {
+        setPhase("examination");
+        setStep("recording");
+        setIsRecording(true);
+
+        try {
+            await startTranscription();
+            toast.success("Recording resumed — Phase 2: Examination");
+        } catch {
+            toast.error("Microphone access failed. Please allow mic permission and try again.");
+            setIsRecording(false);
+        }
+    };
+
+    /**
+     * Phase 2 → Stop recording.
+     * Sends Phase 2 transcript with existing notes, AI fills examination/investigations/diagnosis.
+     */
+    const handleStopRecording = async () => {
+        setIsRecording(false);
+        await stopTranscription();
+        const phase2Transcript = liveTranscript;
+
+        // Merge transcripts
+        const mergedTranscript = phase1Transcript
+            ? `${phase1Transcript}\n\n--- Examination ---\n\n${phase2Transcript}`
+            : phase2Transcript;
+        setTranscript(mergedTranscript);
+
+        // AI extraction — Phase 2 (examination, with existing notes context)
+        if (phase2Transcript && phase2Transcript.trim().length >= 20) {
+            setAiLoading(true);
+            setStep("notes");
+            try {
+                const res = await fetch("/api/ai/extract", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        transcript: phase2Transcript,
+                        phase: "examination",
+                        existingNote: {
+                            chief_complaint: notes.chiefComplaint,
+                            history_of_present_illness: notes.historyOfPresentIllness,
+                        },
+                    }),
+                });
+
+                if (res.ok) {
+                    const ai = await res.json();
+                    setNotes((prev) => ({
+                        ...prev,
+                        examination: ai.examination || [],
+                        investigations: ai.investigations || [],
+                        diagnosis: ai.diagnosis || "",
+                    }));
                     setMedications(
                         (ai.prescription || []).map((p: { name?: string; morning?: string; noon?: string; night?: string; timing?: string; duration?: string }) => ({
                             name: p.name || "",
@@ -142,7 +236,7 @@ export default function NewConsultationPage() {
                     );
                     setInstructions(ai.instructions || "");
                     setAiPrefilled(true);
-                    toast.success("AI notes generated — review and edit as needed");
+                    toast.success("Full notes generated — review all fields before saving");
                 } else {
                     toast.error("AI extraction failed — fill in notes manually");
                 }
@@ -153,7 +247,7 @@ export default function NewConsultationPage() {
             }
         } else {
             setStep("notes");
-            toast.success("Recording stopped. Fill in clinical notes.");
+            toast.success("Recording stopped. Fill in examination notes.");
         }
     };
 
@@ -163,10 +257,6 @@ export default function NewConsultationPage() {
     };
 
     const handleComplete = async () => {
-        if (medications.length === 0) {
-            toast.error("Please add at least one medication");
-            return;
-        }
         if (!consultationId) {
             toast.error("Consultation not found. Please start over.");
             return;
@@ -183,6 +273,7 @@ export default function NewConsultationPage() {
                     history_of_present_illness: notes.historyOfPresentIllness,
                     past_medical_history: notes.pastMedicalHistory,
                     examination: notes.examination,
+                    investigations: notes.investigations,
                     diagnosis: notes.diagnosis,
                     prescription: medications,
                     instructions: instructions || null,
@@ -249,6 +340,8 @@ export default function NewConsultationPage() {
                     isConnected={isConnected}
                     transcriptionError={transcriptionError}
                     onStopRecording={handleStopRecording}
+                    phase={phase}
+                    onPauseForExamination={handlePauseForExamination}
                 />
             )}
 
@@ -260,6 +353,8 @@ export default function NewConsultationPage() {
                     onComplete={handleNotesComplete}
                     aiLoading={aiLoading}
                     aiPrefilled={aiPrefilled}
+                    phase={phase}
+                    onResumeExamination={handleResumeExamination}
                 />
             )}
 

@@ -61,6 +61,7 @@ export interface ConsultationDetail {
     history_of_present_illness: string[];
     past_medical_history: string[];
     examination: string[];
+    investigations: string[];
     diagnosis: string | null;
     prescription: Prescription[];
     instructions: string | null;
@@ -72,6 +73,7 @@ export interface ConsultationEditForm {
     history_of_present_illness: string[];
     past_medical_history: string[];
     examination: string[];
+    investigations: string[];
     diagnosis: string;
     prescription: Prescription[];
     instructions: string;
@@ -97,6 +99,8 @@ export interface PrescriptionPageData {
     created_at: string;
     chief_complaint: string | null;
     history_of_present_illness: string[];
+    examination: string[];
+    investigations: string[];
     diagnosis: string | null;
     prescription: Prescription[];
     instructions: string | null;

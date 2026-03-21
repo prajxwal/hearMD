@@ -2,16 +2,18 @@
 
 import { EditableList } from "@/components/EditableList";
 import { Button } from "@/components/ui";
-import { toast } from "sonner";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Stethoscope } from "lucide-react";
 
 export interface ClinicalNotes {
     chiefComplaint: string;
     historyOfPresentIllness: string[];
     pastMedicalHistory: string[];
     examination: string[];
+    investigations: string[];
     diagnosis: string;
 }
+
+type ConsultationPhase = "history" | "examination";
 
 interface NotesStepProps {
     notes: ClinicalNotes;
@@ -20,14 +22,14 @@ interface NotesStepProps {
     onComplete: () => void;
     aiLoading?: boolean;
     aiPrefilled?: boolean;
+    phase?: ConsultationPhase;
+    onResumeExamination?: () => void;
 }
 
-export function NotesStep({ notes, setNotes, transcript, onComplete, aiLoading, aiPrefilled }: NotesStepProps) {
+export function NotesStep({ notes, setNotes, transcript, onComplete, aiLoading, aiPrefilled, phase = "examination", onResumeExamination }: NotesStepProps) {
+    const isHistoryPhase = phase === "history";
+
     const handleSave = () => {
-        if (!notes.diagnosis) {
-            toast.error("Please enter a diagnosis");
-            return;
-        }
         onComplete();
     };
 
@@ -58,6 +60,16 @@ export function NotesStep({ notes, setNotes, transcript, onComplete, aiLoading, 
                 </div>
             )}
 
+            {/* Phase Banner */}
+            {isHistoryPhase && (
+                <div className="flex items-center gap-2 p-3 border-2 border-amber-500 bg-amber-500/10">
+                    <Stethoscope className="h-4 w-4 flex-shrink-0 text-amber-600" />
+                    <p className="text-sm">
+                        <strong>Phase 1 — History Only</strong> — examination, investigations, and diagnosis will be filled after you resume recording
+                    </p>
+                </div>
+            )}
+
             {/* Transcript Reference */}
             {transcript && (
                 <details className="border-2 border-[var(--border)]">
@@ -73,7 +85,7 @@ export function NotesStep({ notes, setNotes, transcript, onComplete, aiLoading, 
             {/* Chief Complaint */}
             <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wide">
-                    Chief Complaint *
+                    Chief Complaint
                 </label>
                 <input
                     type="text"
@@ -98,30 +110,71 @@ export function NotesStep({ notes, setNotes, transcript, onComplete, aiLoading, 
                 onChange={(items) => setNotes({ ...notes, pastMedicalHistory: items })}
             />
 
-            {/* Examination */}
-            <EditableList
-                label="Examination"
-                items={notes.examination}
-                onChange={(items) => setNotes({ ...notes, examination: items })}
-            />
-
-            {/* Diagnosis */}
-            <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wide">
-                    Provisional Diagnosis *
-                </label>
-                <input
-                    type="text"
-                    value={notes.diagnosis}
-                    onChange={(e) => setNotes({ ...notes, diagnosis: e.target.value })}
-                    placeholder="e.g. Viral fever"
-                    className="w-full h-12 px-4 border-2 border-[var(--foreground)] bg-transparent text-sm font-bold focus:outline-none"
+            {/* Examination — disabled in history phase */}
+            {isHistoryPhase ? (
+                <div className="space-y-2 opacity-50">
+                    <label className="block text-xs font-bold uppercase tracking-wide">Examination</label>
+                    <div className="w-full px-4 py-3 border-2 border-dashed border-[var(--border)] text-sm text-[var(--muted)] italic">
+                        Pending — resume after examination
+                    </div>
+                </div>
+            ) : (
+                <EditableList
+                    label="Examination"
+                    items={notes.examination}
+                    onChange={(items) => setNotes({ ...notes, examination: items })}
                 />
-            </div>
+            )}
 
-            <Button onClick={handleSave} className="w-full h-14">
-                Continue to Prescription
-            </Button>
+            {/* Investigations — disabled in history phase */}
+            {isHistoryPhase ? (
+                <div className="space-y-2 opacity-50">
+                    <label className="block text-xs font-bold uppercase tracking-wide">Investigations Ordered</label>
+                    <div className="w-full px-4 py-3 border-2 border-dashed border-[var(--border)] text-sm text-[var(--muted)] italic">
+                        Pending — resume after examination
+                    </div>
+                </div>
+            ) : (
+                <EditableList
+                    label="Investigations Ordered"
+                    items={notes.investigations}
+                    onChange={(items) => setNotes({ ...notes, investigations: items })}
+                />
+            )}
+
+            {/* Diagnosis — disabled in history phase */}
+            {isHistoryPhase ? (
+                <div className="space-y-2 opacity-50">
+                    <label className="block text-xs font-bold uppercase tracking-wide">Provisional Diagnosis</label>
+                    <div className="w-full px-4 py-3 border-2 border-dashed border-[var(--foreground)] text-sm text-[var(--muted)] italic">
+                        Pending — resume after examination
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    <label className="block text-xs font-bold uppercase tracking-wide">
+                        Provisional Diagnosis
+                    </label>
+                    <input
+                        type="text"
+                        value={notes.diagnosis}
+                        onChange={(e) => setNotes({ ...notes, diagnosis: e.target.value })}
+                        placeholder="e.g. Viral fever"
+                        className="w-full h-12 px-4 border-2 border-[var(--foreground)] bg-transparent text-sm font-bold focus:outline-none"
+                    />
+                </div>
+            )}
+
+            {/* Action buttons */}
+            {isHistoryPhase && onResumeExamination ? (
+                <Button onClick={onResumeExamination} className="w-full h-14">
+                    Resume — Examination Complete
+                </Button>
+            ) : (
+                <Button onClick={handleSave} className="w-full h-14">
+                    Continue to Prescription
+                </Button>
+            )}
         </div>
     );
 }

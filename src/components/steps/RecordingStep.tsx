@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mic, Square } from "lucide-react";
+import { Mic, Square, Pause } from "lucide-react";
 import type { PatientSummary } from "@/lib/types";
+
+type ConsultationPhase = "history" | "examination";
 
 interface RecordingStepProps {
     patient: PatientSummary;
@@ -11,6 +13,8 @@ interface RecordingStepProps {
     isConnected: boolean;
     transcriptionError: string | null;
     onStopRecording: () => void;
+    phase?: ConsultationPhase;
+    onPauseForExamination?: () => void;
 }
 
 export function RecordingStep({
@@ -20,6 +24,8 @@ export function RecordingStep({
     isConnected,
     transcriptionError,
     onStopRecording,
+    phase = "history",
+    onPauseForExamination,
 }: RecordingStepProps) {
     const [duration, setDuration] = useState(0);
 
@@ -47,6 +53,8 @@ export function RecordingStep({
         return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
+    const phaseLabel = phase === "history" ? "History Taking" : "Examination";
+
     return (
         <div className="space-y-6 border-2 border-[var(--border)] p-6">
             <h2 className="text-xl font-bold">Recording Consultation</h2>
@@ -65,7 +73,9 @@ export function RecordingStep({
                     {isRecording ? (
                         <>
                             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-sm font-bold uppercase">Recording</span>
+                            <span className="text-sm font-bold uppercase">
+                                Recording — {phaseLabel}
+                            </span>
                         </>
                     ) : (
                         <span className="text-sm font-bold uppercase text-[var(--muted)]">Stopped</span>
@@ -94,15 +104,31 @@ export function RecordingStep({
                 </div>
             </div>
 
-            {/* Stop Button */}
+            {/* Action Buttons */}
             {isRecording && (
-                <button
-                    onClick={onStopRecording}
-                    className="w-full h-14 flex items-center justify-center gap-3 bg-red-600 text-white text-sm font-bold uppercase tracking-wide hover:opacity-90"
-                >
-                    <Square className="h-5 w-5 fill-current" />
-                    Stop Recording
-                </button>
+                <div className="space-y-3">
+                    {/* Phase 1: show "Pause — Going to examine" button */}
+                    {phase === "history" && onPauseForExamination && (
+                        <button
+                            onClick={onPauseForExamination}
+                            className="w-full h-14 flex items-center justify-center gap-3 bg-amber-600 text-white text-sm font-bold uppercase tracking-wide hover:opacity-90"
+                        >
+                            <Pause className="h-5 w-5" />
+                            Pause — Going to Examine
+                        </button>
+                    )}
+
+                    {/* Phase 2: show "Stop Recording" button */}
+                    {phase === "examination" && (
+                        <button
+                            onClick={onStopRecording}
+                            className="w-full h-14 flex items-center justify-center gap-3 bg-red-600 text-white text-sm font-bold uppercase tracking-wide hover:opacity-90"
+                        >
+                            <Square className="h-5 w-5 fill-current" />
+                            Stop Recording
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );

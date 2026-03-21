@@ -42,6 +42,7 @@ export default function ConsultationDetailPage() {
                         history_of_present_illness,
                         past_medical_history,
                         examination,
+                        investigations,
                         diagnosis,
                         prescription,
                         instructions,
@@ -58,6 +59,7 @@ export default function ConsultationDetailPage() {
                     history_of_present_illness: data.history_of_present_illness || [],
                     past_medical_history: data.past_medical_history || [],
                     examination: data.examination || [],
+                    investigations: data.investigations || [],
                     prescription: data.prescription || [],
                 };
 
@@ -84,6 +86,9 @@ export default function ConsultationDetailPage() {
                 : [],
             examination: consultation.examination.length > 0
                 ? [...consultation.examination]
+                : [],
+            investigations: consultation.investigations.length > 0
+                ? [...consultation.investigations]
                 : [],
             diagnosis: consultation.diagnosis || "",
             prescription: consultation.prescription.length > 0
@@ -115,6 +120,7 @@ export default function ConsultationDetailPage() {
             const cleanHPI = editForm.history_of_present_illness.filter((s) => s.trim());
             const cleanPMH = editForm.past_medical_history.filter((s) => s.trim());
             const cleanExam = editForm.examination.filter((s) => s.trim());
+            const cleanInvestigations = editForm.investigations.filter((s) => s.trim());
             const cleanRx = editForm.prescription.filter((p) => p.name.trim());
 
             const { error } = await supabase
@@ -124,6 +130,7 @@ export default function ConsultationDetailPage() {
                     history_of_present_illness: cleanHPI,
                     past_medical_history: cleanPMH,
                     examination: cleanExam,
+                    investigations: cleanInvestigations,
                     diagnosis: editForm.diagnosis.trim() || null,
                     prescription: cleanRx,
                     instructions: editForm.instructions.trim() || null,
@@ -139,6 +146,7 @@ export default function ConsultationDetailPage() {
                 history_of_present_illness: cleanHPI,
                 past_medical_history: cleanPMH,
                 examination: cleanExam,
+                investigations: cleanInvestigations,
                 diagnosis: editForm.diagnosis.trim() || null,
                 prescription: cleanRx,
                 instructions: editForm.instructions.trim() || null,
@@ -293,6 +301,11 @@ export default function ConsultationDetailPage() {
                             items={editForm.examination}
                             onChange={(items) => setEditForm({ ...editForm, examination: items })}
                         />
+                        <EditableList
+                            label="Investigations Ordered"
+                            items={editForm.investigations}
+                            onChange={(items) => setEditForm({ ...editForm, investigations: items })}
+                        />
 
                         {/* Diagnosis */}
                         <div className="space-y-2">
@@ -329,6 +342,13 @@ export default function ConsultationDetailPage() {
                                 {renderViewList("History of Present Illness", consultation.history_of_present_illness)}
                                 {renderViewList("Past Medical History", consultation.past_medical_history)}
                                 {renderViewList("Examination", consultation.examination)}
+                                {/* Partial-state banner */}
+                                {consultation.examination.length === 0 && consultation.status === "completed" && (
+                                    <p className="text-xs text-[var(--muted)] italic py-2">
+                                        Examination findings were not recorded for this consultation.
+                                    </p>
+                                )}
+                                {renderViewList("Investigations Ordered", consultation.investigations)}
                                 {consultation.diagnosis && (
                                     <div className="space-y-2">
                                         <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Provisional Diagnosis</h3>

@@ -55,6 +55,8 @@ export default function PrescriptionPage() {
                         created_at,
                         chief_complaint,
                         history_of_present_illness,
+                        examination,
+                        investigations,
                         diagnosis,
                         prescription,
                         instructions,
@@ -72,6 +74,8 @@ export default function PrescriptionPage() {
                     doctor: Array.isArray(consultation.doctor) ? consultation.doctor[0] : consultation.doctor,
                     prescription: consultation.prescription || [],
                     history_of_present_illness: consultation.history_of_present_illness || [],
+                    examination: consultation.examination || [],
+                    investigations: consultation.investigations || [],
                 };
 
                 setData(transformed as PrescriptionPageData);
@@ -286,6 +290,41 @@ export default function PrescriptionPage() {
                                 </p>
                                 <ul style={{ fontSize: "13px", margin: 0, padding: "6px 10px 6px 28px", border: "1px solid #ddd", listStyle: "disc" }}>
                                     {data.history_of_present_illness.map((item: string, i: number) => (
+                                        <li key={i} style={{ marginBottom: "3px" }}>{item}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Examination Findings */}
+                        {data.examination.length > 0 && (
+                            <div style={{ marginBottom: "12px", breakInside: "avoid" as const }}>
+                                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "1px", color: "#888", margin: "0 0 4px 0" }}>
+                                    Examination Findings
+                                </p>
+                                <ul style={{ fontSize: "13px", margin: 0, padding: "6px 10px 6px 28px", border: "1px solid #ddd", listStyle: "disc" }}>
+                                    {data.examination.map((item: string, i: number) => (
+                                        <li key={i} style={{ marginBottom: "3px", fontStyle: item.startsWith("Planned:") ? "italic" : "normal" }}>{item}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Partial-state banner — examination not recorded */}
+                        {data.examination.length === 0 && data.diagnosis && (
+                            <div style={{ marginBottom: "12px", padding: "8px 12px", border: "1px dashed #ccc", fontSize: "12px", color: "#999", fontStyle: "italic" }}>
+                                Examination findings were not recorded for this consultation.
+                            </div>
+                        )}
+
+                        {/* Investigations Ordered */}
+                        {data.investigations.length > 0 && (
+                            <div style={{ marginBottom: "12px", breakInside: "avoid" as const }}>
+                                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "1px", color: "#888", margin: "0 0 4px 0" }}>
+                                    Investigations Ordered
+                                </p>
+                                <ul style={{ fontSize: "13px", margin: 0, padding: "6px 10px 6px 28px", border: "1px solid #ddd", listStyle: "disc" }}>
+                                    {data.investigations.map((item: string, i: number) => (
                                         <li key={i} style={{ marginBottom: "3px" }}>{item}</li>
                                     ))}
                                 </ul>
