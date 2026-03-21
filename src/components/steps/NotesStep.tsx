@@ -13,7 +13,7 @@ export interface ClinicalNotes {
     diagnosis: string;
 }
 
-type ConsultationPhase = "history" | "examination";
+type ConsultationPhase = "history" | "examination" | "complete";
 
 interface NotesStepProps {
     notes: ClinicalNotes;

@@ -11,7 +11,7 @@ You will receive a transcript of a doctor-patient consultation along with a PHAS
 
 --- PHASE RULES (follow these strictly) ---
 
-The consultation has two phases: HISTORY and EXAMINATION.
+The consultation has three phases: HISTORY, EXAMINATION, and COMPLETE.
 
 If PHASE = "history":
   - This is Phase 1 — history taking only.
@@ -24,6 +24,14 @@ If PHASE = "examination":
   - The history has already been captured and may be provided as existing context.
   - Now extract examination findings, investigations ordered, and diagnosis.
   - Populate all applicable fields.
+
+If PHASE = "complete":
+  - This is a COMPLETE SINGLE-SESSION consultation (no separate examination phase).
+  - Extract everything in one pass: chief_complaint, history_of_present_illness, past_medical_history, examination (if any findings were mentioned), investigations (if any were ordered), diagnosis (only if explicitly stated), prescription, and instructions.
+  - Apply all the same guardrails:
+    - Diagnosis only if doctor explicitly concludes it
+    - Advice/instructions only from doctor forward-facing instructions
+    - Patient-reported remedies go in history_of_present_illness, not instructions
 
 --- DIAGNOSIS RULES ---
 - Only extract a diagnosis if the doctor EXPLICITLY states or concludes one.
@@ -80,7 +88,7 @@ General rules:
 - Each HPI, PMH, examination, and investigation item should be a separate bullet point.
 - ONLY respond with the JSON object, no other text.`;
 
-type ExtractionPhase = "history" | "examination";
+type ExtractionPhase = "history" | "examination" | "complete";
 
 /**
  * POST /api/ai/extract
@@ -118,7 +126,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         transcript = body.transcript;
-        if (body.phase === "history" || body.phase === "examination") {
+        if (body.phase === "history" || body.phase === "examination" || body.phase === "complete") {
             phase = body.phase;
         }
         if (body.existingNote) {

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mic, Square, Pause } from "lucide-react";
+import { Mic, Square, Pause, PlayCircle, CheckCircle } from "lucide-react";
 import type { PatientSummary } from "@/lib/types";
 
-type ConsultationPhase = "history" | "examination";
+type ConsultationPhase = "history" | "examination" | "complete";
 
 interface RecordingStepProps {
     patient: PatientSummary;
@@ -15,6 +15,7 @@ interface RecordingStepProps {
     onStopRecording: () => void;
     phase?: ConsultationPhase;
     onPauseForExamination?: () => void;
+    onProceedComplete?: () => void;
 }
 
 export function RecordingStep({
@@ -26,8 +27,10 @@ export function RecordingStep({
     onStopRecording,
     phase = "history",
     onPauseForExamination,
+    onProceedComplete,
 }: RecordingStepProps) {
     const [duration, setDuration] = useState(0);
+    const [showPauseModal, setShowPauseModal] = useState(false);
 
     // Timer
     useEffect(() => {
@@ -55,8 +58,12 @@ export function RecordingStep({
 
     const phaseLabel = phase === "history" ? "History Taking" : "Examination";
 
+    const handlePauseClick = () => {
+        setShowPauseModal(true);
+    };
+
     return (
-        <div className="space-y-6 border-2 border-[var(--border)] p-6">
+        <div className="space-y-6 border-2 border-[var(--border)] p-6 relative">
             <h2 className="text-xl font-bold">Recording Consultation</h2>
 
             {/* Patient Info */}
@@ -78,7 +85,9 @@ export function RecordingStep({
                             </span>
                         </>
                     ) : (
-                        <span className="text-sm font-bold uppercase text-[var(--muted)]">Stopped</span>
+                        <span className="text-sm font-bold uppercase text-[var(--muted)]">
+                            {showPauseModal ? "Paused" : "Stopped"}
+                        </span>
                     )}
                 </div>
                 <p className="text-4xl font-bold tracking-tight font-mono">{formatTime(duration)}</p>
@@ -107,14 +116,14 @@ export function RecordingStep({
             {/* Action Buttons */}
             {isRecording && (
                 <div className="space-y-3">
-                    {/* Phase 1: show "Pause — Going to examine" button */}
-                    {phase === "history" && onPauseForExamination && (
+                    {/* Phase 1: show Pause button */}
+                    {phase === "history" && onPauseForExamination && onProceedComplete && (
                         <button
-                            onClick={onPauseForExamination}
+                            onClick={handlePauseClick}
                             className="w-full h-14 flex items-center justify-center gap-3 bg-amber-600 text-white text-sm font-bold uppercase tracking-wide hover:opacity-90"
                         >
                             <Pause className="h-5 w-5" />
-                            Pause — Going to Examine
+                            Pause Recording
                         </button>
                     )}
 
@@ -128,6 +137,58 @@ export function RecordingStep({
                             Stop Recording
                         </button>
                     )}
+                </div>
+            )}
+
+            {/* Pause Modal Overlay */}
+            {showPauseModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="w-full max-w-md mx-4 border-2 border-[var(--foreground)] bg-[var(--background)] p-8 space-y-6">
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold">Recording Paused</h3>
+                            <p className="text-sm text-[var(--muted)]">What would you like to do?</p>
+                        </div>
+
+                        <div className="space-y-3">
+                            {/* Proceed — Consultation Complete */}
+                            <button
+                                onClick={() => {
+                                    setShowPauseModal(false);
+                                    onProceedComplete?.();
+                                }}
+                                className="w-full p-4 border-2 border-[var(--foreground)] hover:bg-[var(--foreground)] hover:text-[var(--background)] transition-colors text-left space-y-1"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle className="h-5 w-5" />
+                                    <span className="font-bold text-sm uppercase tracking-wide">
+                                        Proceed — Consultation Complete
+                                    </span>
+                                </div>
+                                <p className="text-xs text-[var(--muted)] ml-7">
+                                    Single session. Generate full note now.
+                                </p>
+                            </button>
+
+                            {/* Resume — Going to Examine */}
+                            <button
+                                onClick={() => {
+                                    setShowPauseModal(false);
+                                    onPauseForExamination?.();
+                                }}
+                                className="w-full p-4 border-2 border-[var(--border)] hover:border-[var(--foreground)] transition-colors text-left space-y-1"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <PlayCircle className="h-5 w-5" />
+                                    <span className="font-bold text-sm uppercase tracking-wide">
+                                        Resume — Going to Examine
+                                    </span>
+                                </div>
+                                <p className="text-xs text-[var(--muted)] ml-7">
+                                    Physical examination needed. Resume recording after examination.
+                                </p>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -12,7 +12,7 @@ import { PrescriptionStep } from "@/components/steps/PrescriptionStep";
 import type { PatientSummary, Prescription } from "@/lib/types";
 
 type Step = "patient" | "recording" | "notes" | "prescription";
-type ConsultationPhase = "history" | "examination";
+type ConsultationPhase = "history" | "examination" | "complete";
 
 const STEPS: Step[] = ["patient", "recording", "notes", "prescription"];
 
@@ -124,8 +124,9 @@ export default function NewConsultationPage() {
     };
 
     /**
-     * Phase 1 → Pause for examination.
-     * Stops recording, sends transcript with phase="history", shows notes with pending fields.
+     * Phase 1 → Pause for examination (Resume path).
+     * Recording is already stopped by RecordingStep modal.
+     * Sends transcript with phase="history", shows notes with pending fields.
      */
     const handlePauseForExamination = async () => {
         setIsRecording(false);
@@ -171,6 +172,70 @@ export default function NewConsultationPage() {
         } else {
             setStep("notes");
             toast.success("Recording paused. Fill in history notes, then resume for examination.");
+        }
+    };
+
+    /**
+     * Single-session complete flow (Proceed path).
+     * Recording is already stopped by RecordingStep modal.
+     * Sends transcript with phase="complete", AI extracts everything in one pass.
+     */
+    const handleProceedComplete = async () => {
+        setIsRecording(false);
+        await stopTranscription();
+        const finalTranscript = liveTranscript;
+        setTranscript(finalTranscript);
+        setPhase("complete");
+
+        // AI extraction — Complete (full single-pass extraction)
+        if (finalTranscript && finalTranscript.trim().length >= 20) {
+            setAiLoading(true);
+            setStep("notes");
+            try {
+                const res = await fetch("/api/ai/extract", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        transcript: finalTranscript,
+                        phase: "complete",
+                    }),
+                });
+
+                if (res.ok) {
+                    const ai = await res.json();
+                    setNotes({
+                        chiefComplaint: ai.chief_complaint || "",
+                        historyOfPresentIllness: ai.history_of_present_illness || [],
+                        pastMedicalHistory: ai.past_medical_history || [],
+                        examination: ai.examination || [],
+                        investigations: ai.investigations || [],
+                        diagnosis: ai.diagnosis || "",
+                    });
+                    setMedications(
+                        (ai.prescription || []).map((p: { name?: string; morning?: string; noon?: string; night?: string; timing?: string; duration?: string }) => ({
+                            name: p.name || "",
+                            morning: p.morning || "0",
+                            noon: p.noon || "0",
+                            night: p.night || "0",
+                            timing: p.timing || "After Food",
+                            duration: p.duration || "",
+                        }))
+                    );
+                    setInstructions(ai.instructions || "");
+                    setAiPrefilled(true);
+                    toast.success("Full notes generated — review all fields before saving");
+                } else {
+                    toast.error("AI extraction failed — fill in notes manually");
+                }
+            } catch {
+                toast.error("AI extraction failed — fill in notes manually");
+            } finally {
+                setAiLoading(false);
+            }
+        } else {
+            setPhase("complete");
+            setStep("notes");
+            toast.success("Recording stopped. Fill in notes manually.");
         }
     };
 
@@ -351,6 +416,7 @@ export default function NewConsultationPage() {
                     onStopRecording={handleStopRecording}
                     phase={phase}
                     onPauseForExamination={handlePauseForExamination}
+                    onProceedComplete={handleProceedComplete}
                 />
             )}
 
