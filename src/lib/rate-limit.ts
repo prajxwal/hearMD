@@ -13,15 +13,6 @@ interface RateLimitEntry {
 export function createRateLimiter(limit: number, windowMs: number) {
     const store = new Map<string, RateLimitEntry>();
 
-    // Clean expired entries every 5 minutes to prevent memory leaks
-    setInterval(() => {
-        const now = Date.now();
-        for (const [key, entry] of store) {
-            entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs);
-            if (entry.timestamps.length === 0) store.delete(key);
-        }
-    }, 5 * 60 * 1000).unref?.();
-
     return {
         check(key: string): { allowed: boolean; remaining: number; resetIn: number } {
             const now = Date.now();
