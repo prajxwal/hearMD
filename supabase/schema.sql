@@ -56,6 +56,8 @@ CREATE TABLE consultations (
     diagnosis TEXT CHECK (diagnosis IS NULL OR char_length(diagnosis) <= 500),
     prescription JSONB DEFAULT '[]'::jsonb,
     instructions TEXT CHECK (instructions IS NULL OR char_length(instructions) <= 2000),
+    agent_output JSONB DEFAULT NULL,
+    agent_thread_id TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

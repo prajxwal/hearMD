@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@langchain/core": "^1.1.49",
+    "@langchain/groq": "^1.2.1",
+    "@langchain/langgraph": "^1.4.2",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.3",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "html2pdf.js": "^0.14.0",
@@ -17,7 +21,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sonner": "^2.0.0",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",

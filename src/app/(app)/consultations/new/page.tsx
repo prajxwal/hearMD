@@ -357,12 +357,23 @@ export default function NewConsultationPage() {
 
             if (error) throw error;
 
-            toast.success("Consultation completed! Opening prescription…");
+            toast.success("Consultation completed! Running post-consultation agent…");
 
             // Auto-open prescription in a new tab
             window.open(`/prescription/${consultationId}`, "_blank");
 
-            setTimeout(() => router.push("/dashboard"), 1500);
+            // Fire post-consultation agent in background
+            fetch("/api/agent/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ consultationId }),
+            }).catch(() => {
+                // Agent failure is non-blocking — doctor can re-run from detail page
+                console.warn("Post-consultation agent failed to start");
+            });
+
+            // Redirect to consultation detail page where agent output will appear
+            setTimeout(() => router.push(`/consultations/${consultationId}`), 1500);
         } catch (error) {
             console.error("Error saving consultation:", error);
             toast.error("Failed to save consultation");

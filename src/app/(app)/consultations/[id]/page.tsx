@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, User, Pencil, X, Check, Printer } from "lucide-react";
+import { ArrowLeft, User, Pencil, X, Check, Printer, Play } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { validateConsultationNotes } from "@/lib/validation";
 import { StatusBadge, Button, Card, EmptyState, ConsultationDetailSkeleton } from "@/components/ui";
 import { EditableList } from "@/components/EditableList";
 import { MedicationForm } from "@/components/MedicationForm";
+import { AgentOutputPanel } from "@/components/AgentOutputPanel";
 import { Sun, CloudSun, Moon } from "lucide-react";
 import type { ConsultationDetail, ConsultationEditForm, Prescription } from "@/lib/types";
+import type { AgentOutput } from "@/lib/agent/types";
 
 export default function ConsultationDetailPage() {
     const params = useParams();
@@ -25,6 +27,9 @@ export default function ConsultationDetailPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<ConsultationEditForm | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // Agent state
+    const [agentRunning, setAgentRunning] = useState(false);
 
     useEffect(() => {
         const supabase = createClient();
@@ -46,6 +51,8 @@ export default function ConsultationDetailPage() {
                         diagnosis,
                         prescription,
                         instructions,
+                        agent_output,
+                        agent_thread_id,
                         patient:patients(id, patient_number, name, age, gender)
                     `)
                     .eq("id", params.id)
@@ -61,6 +68,8 @@ export default function ConsultationDetailPage() {
                     examination: data.examination || [],
                     investigations: data.investigations || [],
                     prescription: data.prescription || [],
+                    agent_output: data.agent_output || null,
+                    agent_thread_id: data.agent_thread_id || null,
                 };
 
                 setConsultation(transformed as ConsultationDetail);
@@ -162,6 +171,47 @@ export default function ConsultationDetailPage() {
         }
     };
 
+    // ── Agent handlers ────────────────────────────────────
+
+    const runAgent = async () => {
+        if (!consultation) return;
+        setAgentRunning(true);
+        try {
+            const res = await fetch("/api/agent/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ consultationId: consultation.id }),
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                setConsultation({
+                    ...consultation,
+                    agent_output: result,
+                });
+                if (result.status === "escalated") {
+                    toast.warning("Agent flagged a major drug interaction — review required");
+                } else {
+                    toast.success("Post-consultation agent completed");
+                }
+            } else {
+                toast.error("Agent run failed");
+            }
+        } catch {
+            toast.error("Agent run failed");
+        } finally {
+            setAgentRunning(false);
+        }
+    };
+
+    const handleAgentUpdate = (output: AgentOutput) => {
+        if (!consultation) return;
+        setConsultation({
+            ...consultation,
+            agent_output: output,
+        });
+    };
+
     // View-only list section renderer
     const renderViewList = (label: string, items: string[]) => {
         if (items.length === 0) return null;
@@ -236,6 +286,11 @@ export default function ConsultationDetailPage() {
                                 <Button variant="secondary" onClick={startEditing} icon={<Pencil className="h-4 w-4" />}>
                                     Edit
                                 </Button>
+                                {consultation.status === "completed" && !consultation.agent_output && (
+                                    <Button onClick={runAgent} loading={agentRunning} icon={<Play className="h-4 w-4" />}>
+                                        Run Agent
+                                    </Button>
+                                )}
                             </>
                         ) : (
                             <>
@@ -433,6 +488,18 @@ export default function ConsultationDetailPage() {
                         {consultation.transcript}
                     </div>
                 </Card>
+            )}
+
+            {/* Agent Output */}
+            {consultation.status === "completed" && (
+                <AgentOutputPanel
+                    agentOutput={consultation.agent_output}
+                    consultationId={consultation.id}
+                    threadId={consultation.agent_thread_id}
+                    onRerun={runAgent}
+                    onAgentUpdate={handleAgentUpdate}
+                    isRunning={agentRunning}
+                />
             )}
         </div>
     );

@@ -4,6 +4,8 @@
  * Centralises types that were previously duplicated across multiple page files.
  */
 
+import type { AgentOutput } from "./agent/types";
+
 // ── Patient ─────────────────────────────────────────────────
 
 export interface Patient {
@@ -52,6 +54,7 @@ export interface Consultation {
     patient: PatientSummary;
 }
 
+
 export interface ConsultationDetail {
     id: string;
     created_at: string;
@@ -65,6 +68,8 @@ export interface ConsultationDetail {
     diagnosis: string | null;
     prescription: Prescription[];
     instructions: string | null;
+    agent_output: AgentOutput | null;
+    agent_thread_id: string | null;
     patient: PatientSummary;
 }
 
