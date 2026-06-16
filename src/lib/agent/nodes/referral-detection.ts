@@ -9,7 +9,7 @@
 
 import { ChatGroq } from "@langchain/groq";
 import { z } from "zod";
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 import type { ReferralResult } from "../types";
 
 const ReferralSchema = z.object({

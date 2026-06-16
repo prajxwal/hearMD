@@ -6,7 +6,7 @@
  * F5: Lab Order Sheet — investigations list → structured lab order format
  */
 
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 import type { FormattedPrescription, LabOrderItem } from "../types";
 
 // ── Common fasting tests lookup ─────────────────────────────

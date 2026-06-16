@@ -8,7 +8,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 
 export async function fetchContextNode(
     state: AgentGraphState

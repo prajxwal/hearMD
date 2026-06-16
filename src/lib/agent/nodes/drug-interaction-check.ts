@@ -10,7 +10,7 @@
  */
 
 import { resolveAlias } from "@/lib/medications";
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 import type { DrugInteractionResult, InteractionSeverity } from "../types";
 
 interface RxCuiMapping {

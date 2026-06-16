@@ -8,7 +8,7 @@
 
 import { ChatGroq } from "@langchain/groq";
 import { z } from "zod";
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 import type { CompletenessResult } from "../types";
 
 // Zod schema for structured LLM output

@@ -7,7 +7,7 @@
  */
 
 import { interrupt } from "@langchain/langgraph";
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 
 export async function escalationNode(
     state: AgentGraphState

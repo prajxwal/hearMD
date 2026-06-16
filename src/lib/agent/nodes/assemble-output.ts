@@ -5,7 +5,7 @@
  * Determines if escalation is needed based on major drug interactions.
  */
 
-import type { AgentGraphState } from "../graph";
+import type { AgentGraphState } from "../state";
 
 export async function assembleOutputNode(
     state: AgentGraphState
